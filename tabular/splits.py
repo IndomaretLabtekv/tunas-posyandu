@@ -116,6 +116,7 @@ def temporal_split(
     test_frac: float = 0.2,
     val_frac: float = 0.2,
     seed: int = 42,
+    label_available_col: str | None = None,
 ) -> Split:
     """Temporal holdout: test = periode terakhir kohort.
 
@@ -141,6 +142,23 @@ def temporal_split(
     test_idx = d.index[is_test]
     pool = d.index[~is_test]
 
+    # Purge label yang belum matang. Baris bertanggal sebelum cutoff yang
+    # labelnya baru diketahui SETELAH cutoff tidak boleh masuk train/val:
+    # pada saat cutoff, label itu belum tersedia bagi siapa pun.
+    n_purged = 0
+    if label_available_col is not None:
+        if label_available_col not in d.columns:
+            raise ValueError(f"Kolom {label_available_col!r} tidak ada.")
+        avail = pd.to_datetime(d[label_available_col], errors="coerce")
+        immature = pool[(avail.loc[pool] >= cutoff) | avail.loc[pool].isna()]
+        n_purged = len(immature)
+        pool = pool.difference(immature)
+        if len(pool) == 0:
+            raise ValueError(
+                "Seluruh baris pra-cutoff terpurge karena labelnya belum matang. "
+                "Perbesar rentang data atau majukan cutoff."
+            )
+
     # validation diambil dari pool secara grouped agar tuning bebas kebocoran identitas
     pool_children = np.array(sorted(d.loc[pool, child_col].unique()))
     rng = np.random.default_rng(seed)
@@ -156,7 +174,8 @@ def temporal_split(
         train=train_idx,
         val=val_idx,
         test=test_idx,
-        kind=f"temporal(cutoff={pd.Timestamp(cutoff).date()})",
+        kind=(f"temporal(cutoff={pd.Timestamp(cutoff).date()}, "
+              f"purged_unmatured={n_purged})"),
         seed=seed,
         child_ids={
             "train": sorted(d.loc[train_idx, child_col].unique().tolist()),

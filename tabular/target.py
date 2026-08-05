@@ -154,12 +154,22 @@ def label_visits(
 
 
 def attach_labels(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
-    """Versi praktis: kembalikan salinan df dengan kolom label terpasang."""
+    """Versi praktis: kembalikan salinan df dengan kolom label terpasang.
+
+    `label_available_date` = tanggal kunjungan tindak lanjut yang membentuk
+    label. Kolom ini WAJIB dipakai oleh temporal split: label pada baris
+    bertanggal sebelum cutoff belum tentu sudah diketahui pada saat cutoff,
+    dan memakainya untuk melatih adalah kebocoran masa depan.
+    """
     res = label_visits(df, **kwargs)
     out = df.copy()
     out["y_deterioration"] = res.label
     out["drop_reason"] = res.drop_reason
     out["followup_idx"] = res.followup_idx
+    dates = pd.to_datetime(df["visit_date"], errors="coerce")
+    out["label_available_date"] = res.followup_idx.map(
+        lambda i: dates.loc[i] if pd.notna(i) else pd.NaT
+    )
     return out
 
 

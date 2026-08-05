@@ -269,6 +269,49 @@ def run(cfg: ExperimentConfig) -> dict:
                                           "M2_plus_trajectory", "M3_plus_contextual"])]
     ablation.to_csv(cfg.out_dir / "tab05_ablation.csv", index=False)
 
+    # TAB-09: atribusi SHAP untuk model utama.
+    try:
+        from tabular.explain import Explainer
+        ex = Explainer(primary_model, primary_cols)
+        ex.global_importance(X_te[primary_cols]).to_csv(
+            cfg.out_dir / "tab09_shap_global.csv", index=False
+        )
+        # Contoh penjelasan per anak: prioritas tertinggi, untuk demo & paper.
+        # Urutan memakai tie-break yang sama dengan ranking utama.
+        top_order = np.lexsort((X_te["child_id"].astype(str).to_numpy(), -primary_scores))[:10]
+        top_idx = X_te.index[top_order]
+        expl = ex.explain_batch(X_te.loc[top_idx, primary_cols], top_k=5)
+
+        # `row_index` adalah indeks internal DataFrame -- tidak berarti apa pun
+        # bagi frontend. Sertakan identitas anak, tanggal, peringkat, dan skor
+        # supaya artefak ini benar-benar dapat dipakai langsung.
+        score_by_index = pd.Series(primary_scores, index=X_te.index)
+        rank_by_index = pd.Series(np.arange(1, len(top_idx) + 1), index=top_idx)
+        expl.insert(1, "child_id", expl["row_index"].map(X_te["child_id"]))
+        expl.insert(2, "prediction_date", expl["row_index"].map(X_te["prediction_date"]))
+        expl.insert(3, "priority_rank", expl["row_index"].map(rank_by_index))
+        expl.insert(4, "priority_score", expl["row_index"].map(score_by_index))
+        expl.to_csv(cfg.out_dir / "tab09_shap_top_children.csv", index=False)
+        shap_ok = True
+    except ImportError:
+        # Paket shap opsional; ketiadaannya tidak boleh menggagalkan eksperimen.
+        shap_ok = False
+
+    # Persistensi model utama. Tanpa ini, API tidak dapat memuat model dan
+    # memanggil Explainer pada anak baru -- eksperimen selesai tetapi produk
+    # belum bisa memakainya.
+    model_path = cfg.out_dir / "primary_model.joblib"
+    try:
+        import joblib
+        joblib.dump(
+            {"model": primary_model, "feature_names": primary_cols,
+             "model_name": cfg.primary_model, "operating_k": cfg.operating_k},
+            model_path,
+        )
+        model_saved = True
+    except ImportError:
+        model_saved = False
+
     manifest = {
         "timestamp_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "git_commit": _git_commit(),
@@ -295,6 +338,8 @@ def run(cfg: ExperimentConfig) -> dict:
         "lgb_params": LGB_PARAMS,
         "best_iteration": {n: int(m.best_iteration_ or LGB_PARAMS["n_estimators"])
                            for n, (m, _) in models.items()},
+        "shap_artifacts_written": shap_ok,
+        "primary_model_path": str(model_path) if model_saved else None,
         "n_features": {"snapshot": len(snap), "snapshot+trajectory": len(snap_traj), "full": len(full)},
     }
     (cfg.out_dir / "tab04_manifest.json").write_text(json.dumps(manifest, indent=2))

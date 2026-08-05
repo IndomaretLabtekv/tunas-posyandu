@@ -30,32 +30,36 @@ Data antropometri Posyandu tingkat individu bersifat sensitif dan tidak tersedia
 | `child_id` | str | Identitas anak (sintetis) |
 | `visit_date` | date | Tanggal kunjungan |
 | `birth_date` | date | Tanggal lahir |
-| `sex` | enum | L / P |
-| `age_months` | float | Turunan |
+| `sex` | enum | M / F |
+| `age_days` | int | Turunan dari `birth_date` dan `visit_date`; usia dalam hari adalah satuan kerja seluruh pipeline |
 | `weight_kg` | float | Berat badan hasil ukur |
 | `length_cm` | float | Panjang badan hasil ukur |
 | `measure_mode` | enum | recumbent (MVP) |
-| `immunization_complete` | bool | |
+| `immunization_on_schedule` | bool | Status **pada kunjungan itu** ("lengkap sesuai usia"), bukan status final sepanjang hidup anak |
 | `ses_index` | float | Indikator sosial ekonomi keluarga |
 | `birth_weight_kg` | float | |
-| `exclusive_bf` | bool | ASI eksklusif |
+| `exclusive_bf` | bool \| NA | Hasil ASI eksklusif 6 bulan; **kosong sebelum usia 180 hari** karena belum dapat diketahui |
 | `visit_gap_days` | int | Jarak dari kunjungan sebelumnya |
 | `measured_by_cv` | bool | Apakah kunjungan memakai kanal visual |
+| `haz` | float | HAZ hasil hitung dari `length_cm` **terukur** memakai tabel LMS WHO; kosong bila panjang badan kosong atau usia di luar rentang MVP |
+
+**Variabel laten yang TIDAK dirilis sebagai fitur.** `care_propensity` dan `exclusive_bf_history` hanya dipakai untuk membangkitkan dunia sintetis. Keduanya merepresentasikan hasil akhir yang belum diketahui pada kunjungan awal, sehingga memakainya sebagai fitur sejak usia 0 hari adalah kebocoran waktu. Yang dirilis hanyalah turunannya yang sah pada waktu `t`.
 
 ### 2.3 Cara pembangkitan
 
 Didokumentasikan agar pembaca dapat menilai sendiri seberapa jauh hasil model merupakan konsekuensi desain generator.
 
-1. **Lintasan dasar.** Setiap anak diberi lintasan HAZ laten dengan tingkat awal dan kecepatan perubahan yang diambil dari distribusi populasi, dikalibrasi agar prevalensi stunting kohort mendekati angka nasional.
+1. **Lintasan dasar.** Setiap anak diberi lintasan HAZ laten dengan tingkat awal dan kecepatan perubahan yang diambil dari distribusi populasi. Parameternya **dipilih secara heuristik** agar statistik simulasi berada pada orde besaran yang serupa dengan angka nasional — bukan hasil kalibrasi terhadap data nyata.
 2. **Heterogenitas.** Sebagian anak diberi perubahan arah lintasan (misal deteriorasi yang dimulai pada usia tertentu) agar tugas prediksi tidak dapat diselesaikan hanya dengan nilai HAZ terkini.
 3. **Faktor kontekstual.** Variabel kontekstual memengaruhi *kecenderungan* lintasan secara probabilistik, bukan menentukan label secara deterministik.
-4. **Proses pengukuran.** Panjang badan yang tercatat = nilai laten + noise pengukuran (besarnya mencerminkan variasi pengukuran manual di lapangan).
+4. **Proses pengukuran.** Panjang badan yang tercatat = nilai laten + noise pengukuran (besarnya mencerminkan variasi pengukuran manual di lapangan). Berat badan dibangkitkan dari **heuristik kenaikan berbasis usia** (~3 kg lahir, ~8 kg pada 6 bulan, ~10 kg pada 12 bulan, ~13 kg pada 24 bulan) dengan kaitan moderat terhadap HAZ; ini **bukan kurva WHO** dan bukan model klinis, hanya cukup agar kolom berat berada pada orde besaran yang benar.
 5. **Ketidaklengkapan.** Kunjungan dilewat secara acak dan tidak-acak (anak dengan indeks sosial ekonomi rendah lebih sering absen), sebagian kolom kosong.
 6. **Label.** Deteriorasi dihitung dari lintasan **setelah** waktu prediksi, bukan dari aturan atas fitur input.
 
 ### 2.4 Batasan yang wajib dinyatakan
 
 - Generator adalah **model dunia yang disederhanakan**; ia tidak menangkap seluruh determinan pertumbuhan anak.
+- **Statistik prevalensi wajib menyebut unit analisisnya.** Proporsi kunjungan dengan HAZ < −2 berbeda dari proporsi anak pada kunjungan pertama maupun terakhir, karena anak yang lebih rajin hadir menyumbang lebih banyak baris dan lintasan rata-rata menurun. Ketiganya dilaporkan terpisah, disertai coverage agar denominatornya transparan.
 - Performa pada kohort ini menunjukkan bahwa pipeline dapat memulihkan pola yang ditanamkan simulasi. **Ini bukti kelayakan teknis, bukan validitas klinis.**
 - Perbandingan antar model tetap bermakna karena semua model menghadapi generator yang sama; angka absolutnya tidak dapat dipindahkan ke populasi nyata.
 - Ambang deteriorasi yang dipakai adalah ambang operasional prototipe dan perlu dikalibrasi bersama ahli gizi.

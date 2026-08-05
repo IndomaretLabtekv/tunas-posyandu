@@ -1,0 +1,4 @@
+sex,age_days,length_cm,expected_haz,tol
+# Isi dari keluaran WHO Anthro (tol 0.01) atau tabel z-score WHO (tol 0.05).
+# Minimal 8 kasus: median L/P, tepat -2, di bawah -3, usia 0 hari, batas 23 bulan.
+# Hapus baris komentar ini sebelum dipakai.

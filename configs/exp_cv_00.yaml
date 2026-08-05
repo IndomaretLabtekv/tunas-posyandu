@@ -1,0 +1,8 @@
+# CV-00 plane-offset stress test (DEC-011) — gerbang arsitektur kanal visual
+experiment_id: CV-00
+camera_heights_cm: [100, 150, 200]
+object_elevations_cm: [0, 5, 10, 15]
+frame_positions: [center, edge]
+marker_mat_size_cm: [60, 100]
+repeats_per_cell: 3
+output: results/cv/cv00_plane_offset.csv

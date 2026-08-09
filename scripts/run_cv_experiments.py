@@ -104,7 +104,13 @@ def main() -> None:
     for path in images:
         img = cv2.imread(str(path))
         if img is None and path.suffix.lower() == ".avif":
+            import shutil
             import subprocess
+            if shutil.which("ffmpeg") is None:
+                print(f"[skip] {path.name}: butuh ffmpeg untuk .avif "
+                      f"(install: apt install ffmpeg / conda install -c "
+                      f"conda-forge ffmpeg)")
+                continue
             tmp = OUT / "overlay" / "_tmp_avif.png"
             tmp.parent.mkdir(parents=True, exist_ok=True)
             subprocess.run(["ffmpeg", "-y", "-i", str(path), str(tmp)],

@@ -132,3 +132,18 @@ def test_alas_tanpa_badan_ditolak():
                          image_qc=ImageQC(min_blur_var=1.0))
     assert not res.ok, "bayangan tepi tidak boleh terukur sebagai badan"
     assert any("dekat tepi" in r for r in res.qc_reasons)
+
+
+def test_logo_tengah_di_alas_kosong_ditolak():
+    """Logo/tekstur kecil di tengah alas kosong bukan badan (regresi r5)."""
+    from _cv_synth import synth_plain_mat
+
+    img, ppc, box = synth_plain_mat()
+    x0, y0, x1, y1 = box
+    img2 = img.copy()
+    cx, cy = (x0 + x1) // 2, (y0 + y1) // 2
+    cv2.circle(img2, (cx, cy), int(4 * ppc), (30, 120, 200), -1)  # logo 8cm
+    res = measure_length(img2, SPEC, segmenter=ColorSegmenter(),
+                         image_qc=ImageQC(min_blur_var=1.0))
+    assert not res.ok, "logo tengah tidak boleh terukur sebagai badan"
+    assert any("terlalu kecil" in r for r in res.qc_reasons)

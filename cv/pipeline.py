@@ -37,6 +37,9 @@ POSTURE_PENALTY_CAP = 0.6
 # Margin subjek dari tepi alas (fraksi dimensi citra teregistrasi):
 # bayangan tepi alas tidak boleh terukur sebagai badan.
 SUBJECT_EDGE_MARGIN_FRAC = 0.04
+# Luas subjek minimal (fraksi luas citra teregistrasi): logo/tekstur
+# kecil di alas kosong bukan badan.
+SUBJECT_MIN_AREA_FRAC = 0.04
 
 
 def _default_reference_detector(image, mat_spec):
@@ -125,6 +128,16 @@ def measure_length(
             or ys.min() < m * h_r or ys.max() > (1 - m) * h_r):
         return MeasurementResult(ok=False, model=seg.model,
                                  qc_reasons=["subjek terlalu dekat tepi alas"],
+                                 latency_s=time.perf_counter() - t0)
+
+    # QC luas subjek: logo/tekstur kecil di tengah alas kosong bukan badan.
+    # Bayi minimal ~4% luas alas; logo jauh lebih kecil (ambang operasional,
+    # kalibrasi dari data proksi). Batas sisa: region non-alas BESAR di
+    # tengah alas kosong tidak dapat dibedakan dari badan tanpa konteks
+    # tambahan -- dimitigasi QC postur + penanda kepercayaan rendah.
+    if seg.mask.mean() < SUBJECT_MIN_AREA_FRAC:
+        return MeasurementResult(ok=False, model=seg.model,
+                                 qc_reasons=["subjek terlalu kecil"],
                                  latency_s=time.perf_counter() - t0)
 
     end_rect = endpoints_from_mask(seg.mask)

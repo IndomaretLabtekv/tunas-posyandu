@@ -18,6 +18,10 @@ conda activate datsci
 python scripts/run_cv_experiments.py
 ```
 
+Dependensi sistem: `ffmpeg` (hanya untuk foto `.avif`; tanpanya foto
+`.avif` di-skip dengan pesan jelas).
+
+
 Runner membaca semua foto di `experiments/src/**`, menjalankan pipeline
 kanal visual, lalu menulis:
 

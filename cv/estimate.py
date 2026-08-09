@@ -104,6 +104,8 @@ def estimate_length_no_reference(
             )
 
     # 4. Fallback: prior perspektif (foto miring/samping atau tanpa kulit).
+    # focal_px=0 (falsy) sengaja berarti "tidak diberikan" -> pakai heuristik;
+    # nilai eksplisit 0 tidak pernah valid sebagai focal panjang.
     f_px = focal_px if focal_px else DEFAULT_FOCAL_FRACTION * image.shape[1]
     if not (np.isfinite(f_px) and f_px > 0
             and np.isfinite(camera_height_cm) and camera_height_cm > 0):

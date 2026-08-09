@@ -53,6 +53,9 @@ Dokumen ini juga berfungsi sebagai bahan mentah untuk pembahasan *trade-off* di 
 
 ## DEC-004 — "Rektifikasi perspektif + geometry QC", bukan "koreksi parallax"
 
+> **Catatan (DEC-015):** referensi skala kini alas polos berukuran diketahui
+> (tanpa marker); keputusan geometri di DEC-004 ini tetap berlaku.
+
 **Konteks.** Homografi memetakan satu bidang planar ke bidang planar lain. Marker ArUco berada pada bidang alas; bagian tubuh yang tidak tepat pada bidang tersebut tidak otomatis terkoreksi. Estimasi pose kamera yang sebenarnya membutuhkan parameter intrinsik dan koefisien distorsi, bukan hanya empat sudut marker.
 
 **Keputusan.** MVP **mengontrol** parallax, tidak mengklaim menyelesaikannya:

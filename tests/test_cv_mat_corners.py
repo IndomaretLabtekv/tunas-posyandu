@@ -1,5 +1,6 @@
 """Test deteksi alas polos tanpa marker (Opsi 1 / DEC-015)."""
 
+import cv2
 import numpy as np
 import pytest
 
@@ -67,3 +68,43 @@ def test_mode_marker_masih_tersedia():
         image_qc=ImageQC(min_blur_var=1.0),
     )
     assert res.ok and res.length_cm == pytest.approx(body_cm, abs=1.5)
+
+
+def test_pengukuran_tahan_foto_diputar_90_derajat():
+    img, _, _, body_cm = synth_plain_mat_with_body()
+    rotated = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
+    res = measure_length(
+        rotated, SPEC,
+        segmenter=ColorSegmenter(mat_color=STANDARD_MAT_COLOR),
+        image_qc=ImageQC(min_blur_var=1.0),
+    )
+    assert res.ok, res.qc_reasons
+    assert res.length_cm == pytest.approx(body_cm, abs=1.5)
+
+
+def test_segiempat_berpola_ditolak():
+    # Karpet/meja berpola (kotak-kotak) bukan alas polos -> ditolak.
+    img = np.full((420, 520, 3), 230, np.uint8)
+    x0, y0, x1, y1 = 60, 80, 60 + 240, 80 + 320
+    for y in range(y0, y1, 20):
+        for x in range(x0, x1, 20):
+            color = 30 if ((x - x0) // 20 + (y - y0) // 20) % 2 == 0 else 220
+            img[y:y + 20, x:x + 20] = color
+    det = detect_mat_corners(img, SPEC)
+    assert not det.ok
+
+
+def test_segiempat_bujur_sangkar_ditolak():
+    # Alas produk 60x100; kandidat bujur sangkar tidak cocok rasio -> ditolak.
+    img = np.full((420, 520, 3), 230, np.uint8)
+    img[80:320, 60:300] = (200, 120, 40)  # 240x240 px
+    det = detect_mat_corners(img, SPEC)
+    assert not det.ok
+
+
+def test_deteksi_deterministik_antar_panggilan():
+    img, _, _ = synth_plain_mat()
+    a = detect_mat_corners(img, SPEC)
+    b = detect_mat_corners(img, SPEC)
+    assert a.ok and b.ok
+    assert np.allclose(a.image_points, b.image_points, atol=1e-6)

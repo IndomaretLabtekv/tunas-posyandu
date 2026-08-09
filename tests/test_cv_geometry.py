@@ -195,6 +195,18 @@ def test_posisi_pusat_bingkai_lebih_kecil_daripada_tepi(flat):
     assert off_center_fraction(det, (5, 5), img.shape) > 0.9
 
 
+def test_residual_reprojection_tidak_menjadi_penolak(flat):
+    """Regresi DEC-015: residual 4-titik ~0 by construction, non-gating."""
+    from cv.aruco import DetectionResult
+
+    _, _, _, det = flat
+    fake = DetectionResult(ok=True, image_points=det.image_points,
+                           homography=det.homography,
+                           reprojection_error_px=999.0)  # nilai tak masuk akal
+    res = GeometryQC().check(fake, SPEC)
+    assert res["passed"], "residual reprojection tidak boleh menolak"
+
+
 # ---------------------------------------------------------------- runner
 
 def test_ringkasan_melaporkan_coverage_bersama_mae():

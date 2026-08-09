@@ -43,3 +43,11 @@ def test_tungkai_terpisah_ditandai():
 def test_siluet_terlalu_kecil_ditolak():
     res = QC.check(np.zeros((10, 10), bool))
     assert not res["passed"] and any("terlalu kecil" in r for r in res["reasons"])
+
+
+def test_metrik_tidak_bergantung_posisi_di_bingkai():
+    # Tubuh lurus di pojok bingkai besar: bbox-normalisasi -> tetap lolos.
+    frame = np.zeros((900, 1400), bool)
+    frame[60:200, 1000:1300] = _hrect(300, 140)  # badan horizontal kecil
+    res = QC.check(frame)
+    assert res["passed"], res["reasons"]

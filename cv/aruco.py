@@ -114,10 +114,12 @@ def detect_markers(image: np.ndarray, spec: MatSpec) -> DetectionResult:
 
 
 def _reprojection_error(H: np.ndarray, image_pts: np.ndarray, object_pts: np.ndarray) -> float:
-    """RMS galat saat titik alas dipetakan balik ke citra.
+    """RMS galat saat titik alas dipetakan balik ke citra (DIAGNOSTIK).
 
-    Nilai besar menandakan keempat titik tidak benar-benar sebidang: alas
-    melengkung, marker terlipat, atau ada yang salah terdeteksi.
+    Dengan homografi yang dihitung dari tepat 4 titik, residual ini ~0 by
+    construction dan TIDAK dipakai sebagai penolak (lihat GeometryQC).
+    Residual yang bermakna membutuhkan korespondensi berlebih (mis. 16
+    sudut marker) -- Future Work.
     """
     Hinv = np.linalg.inv(H)
     back = apply_homography(Hinv, object_pts)

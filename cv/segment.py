@@ -163,6 +163,16 @@ class BiRefNetSegmenter(BaseSegmenter):
 
     def segment(self, image_bgr: np.ndarray) -> SegmentResult:
         t0 = time.perf_counter()
+        try:
+            return self._segment(image_bgr, t0)
+        except Exception as e:  # noqa: BLE001 -- kegagalan model = ok=False,
+            # bukan crash; pipeline punya fallback ke baseline warna (DEC-014).
+            return SegmentResult(
+                mask=np.zeros(image_bgr.shape[:2], bool), model=self.model_name,
+                latency_s=time.perf_counter() - t0,
+                ok=False, reason=f"model tidak tersedia: {e}")
+
+    def _segment(self, image_bgr: np.ndarray, t0: float) -> SegmentResult:
         self._load()
         import torch
 

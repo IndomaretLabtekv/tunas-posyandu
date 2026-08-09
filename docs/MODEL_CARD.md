@@ -34,7 +34,7 @@ Membantu kader Posyandu memperoleh estimasi panjang badan telentang pada kondisi
 | MAPE (%) | — | — |
 | Galat endpoint kepala (cm) | — | — |
 | Galat endpoint kaki (cm) | — | — |
-| Detection rate marker (%) | — | — |
+| Detection rate sudut alas (%) | — | — |
 | Reject rate QC (%) | — | — |
 | Latency (ms, CPU) | — | — |
 | **Coverage** (% citra yang diterima QC) | — | — |
@@ -45,11 +45,11 @@ Angka MAE tidak pernah dilaporkan sendirian: sistem menerapkan *selective predic
 ### Failure mode yang diketahui
 | Failure | Penyebab | Penanganan sistem |
 |---|---|---|
-| Marker tidak terbaca | Pencahayaan buruk, marker terlipat/kotor, marker terpotong | Citra ditolak, kader diminta ulang |
+| Sudut alas tidak terdeteksi | Pencahayaan buruk, alas kusut/terlipat, warna lantai mirip alas | Citra ditolak, kader diminta ulang |
 | Kamera terlalu miring | Pengambilan tergesa | Geometry QC menolak; UI memberi panduan |
-| Galat sisa akibat offset bidang tubuh | Tubuh tidak tepat pada bidang marker | Tidak dikoreksi penuh; dibatasi lewat protokol jarak & sudut; galat sisa dilaporkan |
+| Galat sisa akibat offset bidang tubuh | Tubuh tidak tepat pada bidang alas | Tidak dikoreksi penuh; dibatasi lewat protokol jarak & sudut; galat sisa dilaporkan |
 | Subjek tidak lurus / tungkai tertekuk | Balita bergerak | QC siluet (kelengkungan sumbu, deviasi) menandai; pose QC menambah sinyal bila lolos CV-06; skor kepercayaan turun |
-| Titik ukur berada di atas bidang marker | Geometri (parallax) | Tidak dikoreksi penuh; dibatasi lewat protokol tinggi kamera & posisi bingkai hasil CV-00 (DEC-011) |
+| Titik ukur berada di atas bidang alas | Geometri (parallax) | Tidak dikoreksi penuh; dibatasi lewat protokol tinggi kamera & posisi bingkai hasil CV-00 (DEC-011) |
 | Oklusi (selimut, pakaian tebal, tangan pengasuh) | Kondisi lapangan | Segmentasi tidak stabil → estimasi ditandai berkepercayaan rendah |
 | Alas berwarna tidak seragam | Alas tidak standar | Segmentasi memburuk; QC menolak |
 

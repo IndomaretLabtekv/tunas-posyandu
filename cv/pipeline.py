@@ -63,12 +63,15 @@ def measure_length(
     haz_fn=None,
     px_per_cm: float = 10.0,
     detector=detect_mat_corners,
+    fallback_segmenter: BaseSegmenter | None = None,
 ) -> MeasurementResult:
     """Ukur panjang badan dari satu citra. Gagal = ok=False (fallback manual).
 
     `detector` adalah callable (image, mat_spec) -> DetectionResult;
     default `cv.mat_corners.detect_mat_corners` (alas polos, DEC-015).
     Mode marker ArUco: lewatkan `detector=cv.aruco.detect_markers`.
+    `fallback_segmenter`: dipakai bila segmenter utama gagal (mis. model
+    berat tidak tersedia) -- fallback otomatis ke baseline warna (DEC-014).
     """
     t0 = time.perf_counter()
     segmenter = segmenter or get_segmenter("birefnet")
@@ -90,8 +93,20 @@ def measure_length(
 
     rect = rectify(image, det, mat_spec, px_per_cm=px_per_cm)
     seg = segmenter.segment(rect)
+    if not seg.ok and fallback_segmenter is not None:
+        fb = fallback_segmenter.segment(rect)
+        if fb.ok:
+            seg = fb
+            reasons.append(f"fallback segmentasi ({segmenter.model_name} -> {fb.model})")
     if not seg.ok:
         return MeasurementResult(ok=False, model=seg.model, qc_reasons=[seg.reason],
+                                 latency_s=time.perf_counter() - t0)
+
+    # QC framing tubuh (V3): subjek menyentuh tepi citra teregistrasi = terpotong.
+    if (seg.mask[:2, :].any() or seg.mask[-2:, :].any()
+            or seg.mask[:, :2].any() or seg.mask[:, -2:].any()):
+        return MeasurementResult(ok=False, model=seg.model,
+                                 qc_reasons=["tubuh terpotong bingkai"],
                                  latency_s=time.perf_counter() - t0)
 
     end_rect = endpoints_from_mask(seg.mask)

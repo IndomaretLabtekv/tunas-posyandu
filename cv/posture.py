@@ -32,7 +32,10 @@ class SilhouettePostureQC:
                     "aspect_ratio": float("nan"), "curvature_deg": float("nan"),
                     "bbox_fill": 0.0, "legs_ratio": float("nan")}
 
+        # Semua metrik dihitung pada siluet yang DICROP ke bbox-nya, bukan
+        # pada koordinat frame: tubuh bisa kecil/off-center di bingkai besar.
         x0, x1, y0, y1 = xs.min(), xs.max(), ys.min(), ys.max()
+        crop = mask[y0:y1 + 1, x0:x1 + 1]
         bw, bh = x1 - x0 + 1, y1 - y0 + 1
         area = len(xs)
         aspect = max(bw, bh) / max(1, min(bw, bh))
@@ -44,11 +47,11 @@ class SilhouettePostureQC:
         if fill < self.min_bbox_fill:
             reasons.append(f"segmentasi tidak stabil (bbox fill {fill:.2f})")
 
-        curvature = self._curvature_deg(mask)
+        curvature = self._curvature_deg(crop)
         if curvature > self.max_curvature_deg:
             reasons.append(f"sumbu tubuh melengkung ({curvature:.0f} deg)")
 
-        legs = self._legs_ratio(mask, (bw, bh))
+        legs = self._legs_ratio(crop, (bw, bh))
         if legs > self.max_bottom_legs_ratio:
             reasons.append(f"tungkai tertekuk/terpisah (lebar bawah {legs:.1f}x tengah)")
 

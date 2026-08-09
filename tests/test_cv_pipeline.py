@@ -62,8 +62,43 @@ def test_postur_menurunkan_confidence_tanpa_menolak():
     # Badan gempal (aspect < 3): postur menandai, tetapi pengukuran tetap keluar.
     img, _, _, _ = synth_mat_with_body(body_axes_cm=(45.0, 22.0))
     res = measure_length(img, SPEC, segmenter=ColorSegmenter(), detector=detect_markers,
-              **_pipeline_kwargs(img))
+                         **_pipeline_kwargs(img))
     assert res.ok
     assert res.confidence < 1.0
     assert any("aspek" in r or "pendek" in r or "melengkung" in r or
                "tungkai" in r or "tidak stabil" in r for r in res.qc_reasons)
+
+
+def test_tubuh_terpotong_bingkai_ditolak():
+    from _cv_synth import synth_mat
+
+    img, ppc, box = synth_mat()  # tanpa badan
+    x0, y0, x1, y1 = box
+    # Badan elips menembus tepi atas alas -> terpotong di citra teregistrasi.
+    img2 = img.copy()
+    cx, cy = (x0 + x1) // 2, y0 + int(2 * ppc)
+    cv2.ellipse(img2, (cx, cy), (int(20 * ppc), int(6 * ppc)), 0, 0, 360, (30, 120, 200), -1)
+    res = measure_length(img2, SPEC, segmenter=ColorSegmenter(), detector=detect_markers,
+                         **_pipeline_kwargs(img2))
+    assert not res.ok
+    assert any("terpotong" in r for r in res.qc_reasons)
+
+
+def test_fallback_segmenter_dipakai_saat_primary_gagal():
+    from cv.segment import BaseSegmenter, SegmentResult
+
+    class Gagal(BaseSegmenter):
+        model_name = "gagal-sengaja"
+
+        def segment(self, image_bgr):
+            return SegmentResult(mask=np.zeros(image_bgr.shape[:2], bool),
+                                 model=self.model_name, latency_s=0.0,
+                                 ok=False, reason="model tidak tersedia: x")
+
+    img, _, _, body_cm = synth_mat_with_body()
+    res = measure_length(img, SPEC, segmenter=Gagal(), detector=detect_markers,
+                         fallback_segmenter=ColorSegmenter(), **_pipeline_kwargs(img))
+    assert res.ok, res.qc_reasons
+    assert res.model == "color"
+    assert res.length_cm == pytest.approx(body_cm, abs=1.5)
+    assert any("fallback" in r for r in res.qc_reasons)

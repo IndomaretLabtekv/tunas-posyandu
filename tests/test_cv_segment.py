@@ -1,5 +1,6 @@
 """Test segmentasi (V4): baseline warna + endpoint siluet (tanpa model berat)."""
 
+import cv2
 import numpy as np
 import pytest
 
@@ -36,3 +37,19 @@ def test_segmenter_registry():
     assert get_segmenter("color").model_name == "color"
     with pytest.raises(ValueError):
         get_segmenter("tidak-ada")
+
+
+def test_badan_kecil_off_center_tetap_terpilih():
+    # Badan kecil di pojok alas: komponen terbesar tetap badan, bukan marker.
+    img, ppc, box, _ = synth_mat_with_body(body_axes_cm=(20.0, 8.0))
+    x0, y0, x1, y1 = box
+    # Marker tetap di sudut; badan elips kecil di pojok kiri-bawah.
+    img2 = img.copy()
+    cv2.ellipse(img2, (x0 + int(12 * ppc), y1 - int(10 * ppc)),
+                (int(10 * ppc), int(4 * ppc)), 0, 0, 360, (30, 120, 200), -1)
+    res = ColorSegmenter().segment(img2)
+    assert res.ok
+    # Komponen terbesar harus badan (bukan marker): mask lebih dekat ke badan.
+    ys, xs = np.nonzero(res.mask)
+    cy = (ys.min() + ys.max()) / 2
+    assert cy > (y0 + y1) / 2  # berada di bawah tengah alas, dekat badan kecil

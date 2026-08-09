@@ -32,7 +32,6 @@ from cv.aruco import DetectionResult, MatSpec, apply_homography
 
 # Ambang default. HARUS diganti dengan angka hasil CV-00, bukan dipakai apa adanya.
 DEFAULT_MAX_TILT_DEG = 12.0
-DEFAULT_MAX_REPROJ_PX = 3.0
 DEFAULT_MIN_CAMERA_HEIGHT_CM = 120.0
 
 
@@ -111,7 +110,6 @@ def off_center_fraction(det: DetectionResult, point_px, image_shape) -> float:
 @dataclass
 class GeometryQC:
     max_tilt_deg: float = DEFAULT_MAX_TILT_DEG
-    max_reprojection_px: float = DEFAULT_MAX_REPROJ_PX
     min_camera_height_cm: float | None = None
 
     def check(self, det: DetectionResult, spec: MatSpec,

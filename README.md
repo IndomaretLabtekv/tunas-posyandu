@@ -131,12 +131,15 @@ independen dicatat di `data/who/provenance.json`.
 ```bash
 python -m cv.evaluate   --config configs/exp_cv_00.yaml    # CV-00 plane-offset stress test
 python -m tabular.final_experiment --config configs/exp_tabular_final.json
+python -m tabular.closure --config configs/exp_tabular_final.json --analysis all
 ```
 
 Perintah tabular membangkitkan lima kohort sintetis, menjalankan B0/B1/B2/M1/M2/M3
 pada grouped dan temporal holdout, lalu menulis seluruh bukti ke
 `results/tabular/final/`. Ringkasan terukur ada di
 [`docs/FINAL_TABULAR_RESULTS.md`](docs/FINAL_TABULAR_RESULTS.md).
+Perintah closure memakai M2 yang dibekukan untuk TAB-08, TAB-10, dan audit tie
+TAB-12; ia tidak melakukan tuning atau mengganti aturan ranking produksi.
 
 Verifikasi model tersimpan pada fixture tetap, di proses baru:
 

@@ -144,6 +144,76 @@ def capacity_predictions(y_score, k_frac: float, tie_break=None) -> np.ndarray:
     return pred
 
 
+def boundary_tie_sensitivity(y_true, y_score, k_frac: float, tie_break) -> dict:
+    """Exact metric bounds from arbitrary membership in the cutoff-score tie.
+
+    The production selection remains ``capacity_predictions`` with its
+    deterministic tie-break.  Only membership inside the score group crossing
+    K is varied for the theoretical minimum and maximum.
+    """
+    y, s, tb = _clean_with_tie(y_true, y_score, tie_break)
+    if tb is None:
+        raise ValueError("tie_break wajib untuk mengaudit ranking produksi.")
+    if not np.isin(y, [0.0, 1.0]).all():
+        raise ValueError("Label tie-sensitivity harus biner 0/1.")
+    if not 0 < k_frac <= 1:
+        raise ValueError("k_frac harus di (0, 1].")
+
+    n = len(y)
+    k = max(1, int(round(k_frac * n)))
+    selected = capacity_predictions(s, k_frac, tb).astype(bool)
+    cutoff = float(np.min(s[selected]))
+    above = s > cutoff
+    tied = s == cutoff
+    n_above, n_tied = int(above.sum()), int(tied.sum())
+    slots = k - n_above
+    positives_above = int(y[above].sum())
+    positives_tied = int(y[tied].sum())
+    negatives_tied = n_tied - positives_tied
+    min_tp = positives_above + max(0, slots - negatives_tied)
+    max_tp = positives_above + min(slots, positives_tied)
+    observed_tp = int(y[selected].sum())
+    n_positive = int(y.sum())
+    prevalence = float(y.mean())
+
+    def metrics(tp: int) -> tuple[float, float, float]:
+        recall = float(tp / n_positive) if n_positive else float("nan")
+        precision = float(tp / k)
+        lift = float(precision / prevalence) if prevalence else float("nan")
+        return recall, precision, lift
+
+    observed = metrics(observed_tp)
+    minimum = metrics(min_tp)
+    maximum = metrics(max_tp)
+    return {
+        "n_children": n,
+        "n_positive": n_positive,
+        "prevalence": prevalence,
+        "k_fraction": float(k_frac),
+        "k_count": k,
+        "n_unique_scores": int(np.unique(s).size),
+        "unique_score_ratio": float(np.unique(s).size / n),
+        "cutoff_score": cutoff,
+        "n_score_above_cutoff": n_above,
+        "n_score_equal_cutoff": n_tied,
+        "slots_taken_from_tie": slots,
+        "positive_above_cutoff": positives_above,
+        "positive_in_tie_group": positives_tied,
+        "observed_tp": observed_tp,
+        "observed_recall_at_k": observed[0],
+        "observed_precision_at_k": observed[1],
+        "observed_lift_at_k": observed[2],
+        "min_tp": min_tp,
+        "max_tp": max_tp,
+        "min_recall_at_k": minimum[0],
+        "max_recall_at_k": maximum[0],
+        "min_precision_at_k": minimum[1],
+        "max_precision_at_k": maximum[1],
+        "min_lift_at_k": minimum[2],
+        "max_lift_at_k": maximum[2],
+    }
+
+
 def _metrics_from_pred(y: np.ndarray, pred: np.ndarray) -> dict:
     tn, fp, fn, tp = confusion_matrix(y, pred, labels=[0, 1]).ravel()
     return {

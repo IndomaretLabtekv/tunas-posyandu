@@ -1,0 +1,100 @@
+{
+  "verified_utc": "2026-08-09T17:57:35+00:00",
+  "reference_directory": "results/tabular/final",
+  "candidate_directory": "/tmp/tunas-task02-clean-output",
+  "clean_source_commit": "e0f5902ec68b0b90f3f5ddbb227259705c892556",
+  "clean_source_git_dirty": false,
+  "absolute_tolerance": 1e-12,
+  "comparisons": [
+    {
+      "file": "dataset_summary.csv",
+      "byte_equal": true,
+      "shape_equal": true,
+      "columns_equal": true,
+      "numeric_equal": true,
+      "max_absolute_difference": 0.0
+    },
+    {
+      "file": "per_seed_metrics.csv",
+      "byte_equal": true,
+      "shape_equal": true,
+      "columns_equal": true,
+      "numeric_equal": true,
+      "max_absolute_difference": 0.0
+    },
+    {
+      "file": "aggregate_metrics.csv",
+      "byte_equal": true,
+      "shape_equal": true,
+      "columns_equal": true,
+      "numeric_equal": true,
+      "max_absolute_difference": 0.0
+    },
+    {
+      "file": "ablation_deltas_per_seed.csv",
+      "byte_equal": true,
+      "shape_equal": true,
+      "columns_equal": true,
+      "numeric_equal": true,
+      "max_absolute_difference": 0.0
+    },
+    {
+      "file": "ablation_deltas_aggregate.csv",
+      "byte_equal": true,
+      "shape_equal": true,
+      "columns_equal": true,
+      "numeric_equal": true,
+      "max_absolute_difference": 0.0
+    },
+    {
+      "file": "tab07_case_selection_summary.csv",
+      "byte_equal": true,
+      "shape_equal": true,
+      "columns_equal": true,
+      "numeric_equal": true,
+      "max_absolute_difference": 0.0
+    },
+    {
+      "file": "tab07_error_analysis.csv",
+      "byte_equal": true,
+      "shape_equal": true,
+      "columns_equal": true,
+      "numeric_equal": true,
+      "max_absolute_difference": 0.0
+    },
+    {
+      "file": "tab07_representative_cases.csv",
+      "byte_equal": true,
+      "shape_equal": true,
+      "columns_equal": true,
+      "numeric_equal": true,
+      "max_absolute_difference": 0.0
+    },
+    {
+      "file": "tab09_shap_global.csv",
+      "byte_equal": true,
+      "shape_equal": true,
+      "columns_equal": true,
+      "numeric_equal": true,
+      "max_absolute_difference": 0.0
+    },
+    {
+      "file": "persistence_expected_predictions.csv",
+      "byte_equal": true,
+      "shape_equal": true,
+      "columns_equal": true,
+      "numeric_equal": true,
+      "max_absolute_difference": 0.0
+    },
+    {
+      "file": "persistence_fresh_predictions.csv",
+      "byte_equal": true,
+      "shape_equal": true,
+      "columns_equal": true,
+      "numeric_equal": true,
+      "max_absolute_difference": 0.0
+    }
+  ],
+  "who_validation_json_equal": true,
+  "passed": true
+}

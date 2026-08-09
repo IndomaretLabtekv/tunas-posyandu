@@ -1,0 +1,9 @@
+measurement,batch_size,repetitions,median_ms,p95_ms,throughput_rows_per_second,size_bytes,size_mib,includes_disk_io,required_for_inference
+model_artifact_size,,,,,,14150.0,0.013494491577148438,True,True
+supplementary_metadata_size,,,,,,4708.0,0.004489898681640625,True,False
+artifact_load,,100.0,9.5786505,11.51321465,,,,True,True
+warm_predict,1.0,200.0,1.1604290000000002,1.8091814999999989,861.7502664962698,,,False,True
+warm_predict,10.0,200.0,1.0539575,2.2325205999999995,9488.048616761112,,,False,True
+warm_predict,100.0,200.0,0.9431085,1.2130955999999993,106032.33880301153,,,False,True
+warm_predict,240.0,200.0,0.986012,1.4859097999999982,243404.74558118967,,,False,True
+score_and_exact_top20_ranking,240.0,200.0,1.0680055,1.5689683999999993,224717.94386826662,,,False,True

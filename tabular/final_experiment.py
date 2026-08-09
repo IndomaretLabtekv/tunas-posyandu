@@ -256,6 +256,9 @@ Performance on these synthetic cohorts validates pipeline and mechanism behavior
 
 def run_final(config_path: Path) -> dict:
     cfg = load_config(config_path)
+    # Capture source provenance before generated tracked artifacts can make the
+    # worktree dirty during an otherwise clean reproducibility run.
+    source_git_commit, source_git_dirty = _git_commit(), _git_dirty()
     out_dir, data_dir = Path(cfg["output_dir"]), Path(cfg["data_dir"])
     out_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
@@ -391,8 +394,9 @@ def run_final(config_path: Path) -> dict:
 
     environment = {
         "python": platform.python_version(),
-        "git_commit": _git_commit(),
-        "git_dirty": _git_dirty(),
+        "git_commit": source_git_commit,
+        "git_dirty": source_git_dirty,
+        "git_dirty_scope": "source state at command start, before generated outputs",
         "packages": {name: version(name) for name in (
             "numpy", "pandas", "scikit-learn", "lightgbm", "shap", "joblib"
         )},

@@ -106,3 +106,81 @@ Top global M2 feature attributions (raw-model log-odds SHAP; non-causal):
 ## Limitations
 
 Performance on these synthetic cohorts validates pipeline and mechanism behavior only. It is not external clinical validation, does not demonstrate benefit on real children, and is not evidence that Tunas improves real-world child-health outcomes. The generator is a simplified world model, and the operational deterioration threshold has not been clinically validated.
+
+<!-- TABULAR_CLOSURE_START -->
+## TAB-12 — Top-K boundary tie sensitivity
+
+The production rule is unchanged: exact K with deterministic `child_id` tie-breaking.
+The ranges below vary only membership inside the cutoff-score tie group.
+
+| evaluation | K | mean / max cutoff tie | mean observed recall | mean exact recall bounds | max range width | worst seed |
+| --- | --- | --- | --- | --- | --- | --- |
+| grouped | 5% | 5.2 / 20 | 0.1531 | 0.1300–0.1608 | 0.1538 | 42 |
+| grouped | 10% | 5.0 / 12 | 0.2587 | 0.2587–0.2741 | 0.0769 | 42 |
+| grouped | 20% | 6.4 / 28 | 0.4821 | 0.4744–0.4975 | 0.1154 | 42 |
+| temporal | 5% | 11.0 / 47 | 0.1627 | 0.1571–0.1712 | 0.0643 | 2026 |
+| temporal | 10% | 16.4 / 54 | 0.2573 | 0.2502–0.2772 | 0.1286 | 2026 |
+| temporal | 20% | 23.6 / 65 | 0.4358 | 0.4141–0.4464 | 0.0897 | 2718 |
+
+## TAB-08 — Synthetic input robustness
+
+The frozen M2 model was trained on unperturbed data. Only measurements available by each
+prediction date were corrupted; WHO HAZ and dependent features were then recomputed.
+
+| evaluation | scenario | AUPRC | coverage | ΔAUPRC | ΔRecall@20% | Recall@20% |
+| --- | --- | --- | --- | --- | --- | --- |
+| grouped | baseline | 0.2735 ± 0.0947 | 1.0000 ± 0.0000 | 0.0000 ± 0.0000 | 0.0000 ± 0.0000 | 0.4821 ± 0.0994 |
+| grouped | length_noise_sigma_0_5cm | 0.2936 ± 0.1212 | 1.0000 ± 0.0000 | 0.0201 ± 0.0668 | 0.0338 ± 0.0689 | 0.5159 ± 0.0802 |
+| grouped | length_noise_sigma_1_0cm | 0.2160 ± 0.0219 | 1.0000 ± 0.0000 | -0.0574 ± 0.0978 | -0.0608 ± 0.1082 | 0.4213 ± 0.0611 |
+| grouped | length_noise_sigma_2_0cm | 0.1536 ± 0.0432 | 1.0000 ± 0.0000 | -0.1199 ± 0.0861 | -0.1608 ± 0.1230 | 0.3213 ± 0.1353 |
+| grouped | length_missing_plus_10pct | 0.2752 ± 0.0823 | 1.0000 ± 0.0000 | 0.0018 ± 0.0271 | -0.0262 ± 0.0251 | 0.4559 ± 0.0975 |
+| grouped | length_missing_plus_20pct | 0.2391 ± 0.0923 | 1.0000 ± 0.0000 | -0.0344 ± 0.0347 | -0.0716 ± 0.0735 | 0.4105 ± 0.1095 |
+| grouped | length_missing_plus_30pct | 0.2447 ± 0.0696 | 1.0000 ± 0.0000 | -0.0288 ± 0.0597 | -0.0012 ± 0.0966 | 0.4809 ± 0.1157 |
+| grouped | current_measurement_missing | 0.1465 ± 0.0363 | 1.0000 ± 0.0000 | -0.1270 ± 0.0907 | -0.2294 ± 0.1893 | 0.2527 ± 0.1315 |
+| temporal | baseline | 0.2976 ± 0.0311 | 1.0000 ± 0.0000 | 0.0000 ± 0.0000 | 0.0000 ± 0.0000 | 0.4358 ± 0.0345 |
+| temporal | length_noise_sigma_0_5cm | 0.2636 ± 0.0366 | 1.0000 ± 0.0000 | -0.0340 ± 0.0244 | -0.0317 ± 0.0242 | 0.4042 ± 0.0405 |
+| temporal | length_noise_sigma_1_0cm | 0.2262 ± 0.0349 | 1.0000 ± 0.0000 | -0.0714 ± 0.0341 | -0.0970 ± 0.0419 | 0.3388 ± 0.0483 |
+| temporal | length_noise_sigma_2_0cm | 0.1860 ± 0.0139 | 1.0000 ± 0.0000 | -0.1116 ± 0.0326 | -0.1556 ± 0.0744 | 0.2802 ± 0.0448 |
+| temporal | length_missing_plus_10pct | 0.2932 ± 0.0346 | 1.0000 ± 0.0000 | -0.0044 ± 0.0088 | -0.0144 ± 0.0208 | 0.4214 ± 0.0408 |
+| temporal | length_missing_plus_20pct | 0.2743 ± 0.0410 | 1.0000 ± 0.0000 | -0.0233 ± 0.0139 | -0.0330 ± 0.0259 | 0.4028 ± 0.0480 |
+| temporal | length_missing_plus_30pct | 0.2477 ± 0.0366 | 1.0000 ± 0.0000 | -0.0499 ± 0.0211 | -0.0760 ± 0.0296 | 0.3599 ± 0.0575 |
+| temporal | current_measurement_missing | 0.2017 ± 0.0293 | 1.0000 ± 0.0000 | -0.0960 ± 0.0476 | -0.1309 ± 0.0713 | 0.3049 ± 0.0720 |
+
+`coverage` is the fraction of intended children receiving a finite model score. A valid
+manual length remains an observed measurement and is not the same as
+`current_measurement_missing`.
+
+## TAB-10 — Current-environment inference benchmark
+
+- Environment: Intel(R) Core(TM) Ultra 7 155H;
+  Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39; Python 3.12.3.
+- Required model artifact: 14150 bytes
+  (0.0135 MiB); schema embedded.
+- Interpreter startup and CSV I/O are excluded from warm prediction timings.
+
+| measurement | batch_size | repetitions | median_ms | p95_ms | throughput_rows_per_second |
+| --- | --- | --- | --- | --- | --- |
+| artifact_load |  | 100 | 9.5787 | 11.5132 |  |
+| warm_predict | 1 | 200 | 1.1604 | 1.8092 | 861.8 |
+| warm_predict | 10 | 200 | 1.0540 | 2.2325 | 9488.0 |
+| warm_predict | 100 | 200 | 0.9431 | 1.2131 | 106032.3 |
+| warm_predict | 240 | 200 | 0.9860 | 1.4859 | 243404.7 |
+| score_and_exact_top20_ranking | 240 | 200 | 1.0680 | 1.5690 | 224717.9 |
+
+## Clean-source reproducibility verification
+
+The committed `TAB-FINAL-01` was regenerated in a detached clean worktree at
+`e0f5902ec68b0b90f3f5ddbb227259705c892556` with `git_dirty=false`. All
+11 compared CSV artifacts were numerically equal within
+`1e-12`; 11/11
+were byte-identical. WHO validation JSON also matched exactly.
+
+## Closure limitations
+
+Robustness is sensitivity analysis on synthetic cohorts, not evidence of clinical
+robustness. Latency applies only to the recorded machine. Equal-score cutoff groups can
+make exact-K membership and Recall@K materially tie-break-sensitive even though list size
+and ordering remain deterministic. The frozen schema contains `measured_by_cv_t`; TAB-08
+does not equate a valid manual measurement with a missing measurement and makes no claim
+that scores are invariant to the source flag.
+<!-- TABULAR_CLOSURE_END -->

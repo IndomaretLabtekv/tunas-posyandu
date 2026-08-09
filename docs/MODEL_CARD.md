@@ -78,7 +78,7 @@ Membantu petugas gizi puskesmas **mengurutkan** tindak lanjut ketika kapasitas i
 ### Pembanding
 Seluruhnya pada target dan split identik, dan seluruhnya menghasilkan **skor kontinu** agar dapat diurutkan dan dibandingkan pada metrik @K (DEC-012):
 
-- **B0** — ranking `−HAZ_t`; representasi praktik eksisting
+- **B0** — ranking `−HAZ_t`; snapshot-only proxy baseline, bukan bukti praktik Posyandu yang terobservasi
 - **B1** — ranking `w₁·(−HAZ_t) + w₂·(−slope_HAZ)`; bobot dari validation split
 - **B2** — logistic regression
 - **M1 / M2 / M3** — LightGBM snapshot / +lintasan / +kontekstual
@@ -101,9 +101,20 @@ dan `results/tabular/final/`.
 | Precision@10% | .1167±.0543 | .1417±.0475 | .1667±.0417 | .2417±.0618 | **.2750±.1337** | **.2750±.0475** |
 | Recall@20% | .2096±.1002 | .2989±.0967 | .2741±.0364 | .4124±.0655 | **.4821±.0994** | .4590±.0820 |
 | Raw Brier | — | — | .2041±.0127 | .0948±.0109 | .0942±.0099 | **.0939±.0107** |
-| Latency (ms) | | | | | | |
+| Latency single-row, median / p95 (ms) | — | — | — | — | 1.143 / 1.562 | — |
 
 Metrik @K adalah yang paling dekat dengan kondisi nyata: kapasitas tindak lanjut petugas terbatas, sehingga yang penting adalah berapa kasus tertangkap dalam K prioritas teratas.
+
+### Robustness, tie sensitivity, dan efficiency
+
+- Noise panjang tambahan 2 cm menurunkan AUPRC M2 dari 0,2735 menjadi 0,1536 pada grouped dan dari 0,2976 menjadi 0,1860 pada temporal (mean lima seed).
+- Ketika panjang/HAZ kunjungan terkini tidak tersedia, AUPRC menjadi 0,1465 grouped dan 0,2017 temporal. Coverage skor tetap 100% karena model dapat menangani nilai kosong; kualitas ranking tetap turun.
+- Missing panjang tambahan 30% menghasilkan AUPRC 0,2447 grouped dan 0,2477 temporal.
+- Model tersimpan berukuran 14.150 byte. Pada environment WSL2/Intel Core Ultra 7 155H, score + exact Top-20% untuk 240 anak memiliki median 0,959 ms dan p95 1,484 ms. Angka ini tidak digeneralisasi ke perangkat lain.
+- Cutoff-score ties membuat Recall@K sensitif terhadap membership. Worst observed range adalah 0,0000–0,1538 pada grouped seed 42, K=5%; aturan produksi exact-K + `child_id` tetap tidak berubah.
+- Schema frozen memuat `measured_by_cv_t`. TAB-08 tidak menyamakan ukuran manual valid dengan ukuran hilang dan tidak membuktikan invariansi skor terhadap flag sumber pengukuran.
+
+Detail lengkap: `docs/FINAL_TABULAR_RESULTS.md` serta artefak TAB-08, TAB-10, dan TAB-12 di `results/tabular/final/`.
 
 ### Failure mode yang diketahui
 | Failure | Konteks | Penanganan |
@@ -112,10 +123,11 @@ Metrik @K adalah yang paling dekat dengan kondisi nyata: kapasitas tindak lanjut
 | Kunjungan tidak teratur | Absen berbulan-bulan | Fitur jarak kunjungan disertakan; kepercayaan diturunkan |
 | Pergeseran distribusi | Populasi berbeda dari kohort pelatihan | Perlu kalibrasi ulang; disebut eksplisit sebagai syarat penerapan |
 | Ketidakseimbangan kelas | Kasus deteriorasi jarang | Dilaporkan dengan AUPRC dan metrik @K, bukan accuracy |
-| Kanal visual tidak tersedia | Fallback manual aktif | Model tetap berjalan pada fitur tabular; performa pada skenario ini dilaporkan terpisah |
+| Pengukuran panjang/HAZ terkini tidak tersedia | Foto gagal dan belum ada ukuran manual valid | Model tetap dapat memberi skor dari riwayat, tetapi ranking memburuk pada TAB-08; minta pengukuran manual valid bila tersedia |
+| Banyak skor sama di batas kapasitas | Daun LightGBM menghasilkan probabilitas identik | Exact-K dan `child_id` menjaga reproduksibilitas; tampilkan sensitivitas membership dari TAB-12 saat menginterpretasi Recall@K |
 
 ### Explainability
 SHAP menunjukkan **kontribusi fitur terhadap keluaran model**. SHAP bukan penjelasan sebab-akibat dan bukan penjelasan medis. Antarmuka menyajikannya sebagai "faktor yang paling memengaruhi skor", disertai keterangan tersebut.
 
 ### Batasan
-Hasil diperoleh pada kohort sintetis. Model merekonstruksi pola yang ditanamkan simulasi; validitas klinis pada populasi nyata belum dibuktikan. Ambang kategori risiko bersifat operasional dan perlu dikalibrasi bersama ahli gizi.
+Hasil diperoleh pada kohort sintetis. Model merekonstruksi pola yang ditanamkan simulasi; validitas klinis dan robustness pada populasi nyata belum dibuktikan. Ambang kategori risiko bersifat operasional dan perlu dikalibrasi bersama ahli gizi. Latency hanya berlaku pada hardware yang direkam, dan metric @K dapat sensitif terhadap tie pada skor cutoff.

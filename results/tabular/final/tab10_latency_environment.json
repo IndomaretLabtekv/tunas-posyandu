@@ -1,0 +1,30 @@
+{
+  "timestamp_utc": "2026-08-09T18:13:20+00:00",
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "system": "Linux",
+  "release": "6.18.33.2-microsoft-standard-WSL2",
+  "machine": "x86_64",
+  "processor": "Intel(R) Core(TM) Ultra 7 155H",
+  "logical_cpu_count": 22,
+  "python": "3.12.3",
+  "packages": {
+    "numpy": "2.4.6",
+    "pandas": "3.0.5",
+    "scikit-learn": "1.9.0",
+    "lightgbm": "4.7.0",
+    "joblib": "1.5.3"
+  },
+  "git_commit": "e0f5902ec68b0b90f3f5ddbb227259705c892556",
+  "git_dirty": true,
+  "git_dirty_scope": "source state at command start, before generated outputs",
+  "model_path": "results/tabular/final/primary_model.joblib",
+  "model_sha256": "30a16dab120f568bfe168cbea62a4403792b0c5b26e760f76a94182fc62179f9",
+  "schema_is_embedded": true,
+  "required_inference_artifact_bytes": 14150,
+  "supplementary_metadata_bytes": 4708,
+  "fixture_predictions": 8,
+  "fixture_tolerance": 1e-12,
+  "fixture_max_absolute_difference": 8.326672684688674e-17,
+  "timer": "time.perf_counter_ns",
+  "interpreter_startup_included": false
+}

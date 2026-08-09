@@ -113,7 +113,9 @@ def _consecutive_declines(values: np.ndarray) -> int:
     return n
 
 
-def build_features(df: pd.DataFrame) -> pd.DataFrame:
+def build_features(
+    df: pd.DataFrame, *, output_indices: pd.Index | list | None = None
+) -> pd.DataFrame:
     """Bangun matriks fitur, satu baris per kunjungan.
 
     Untuk setiap baris `t`, seluruh agregat dihitung dari kunjungan anak yang
@@ -126,6 +128,14 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
         raise ValueError(f"Kolom hilang: {sorted(missing)}")
     if not df.index.is_unique:
         raise ValueError("Index DataFrame harus unik.")
+    requested = None if output_indices is None else pd.Index(output_indices)
+    if requested is not None:
+        if requested.empty or not requested.is_unique:
+            raise ValueError("output_indices harus tidak kosong dan unik.")
+        missing_indices = requested.difference(df.index)
+        if len(missing_indices):
+            raise ValueError(f"output_indices tidak ada di data: {list(missing_indices[:5])}")
+    wanted = None if requested is None else set(requested)
 
     d = df.copy()
     d["visit_date"] = pd.to_datetime(d["visit_date"], errors="coerce")
@@ -146,6 +156,8 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
         lens = grp["length_cm"].to_numpy(dtype=float)
 
         for i, row_idx in enumerate(idx):
+            if wanted is not None and row_idx not in wanted:
+                continue
             row = grp.loc[row_idx]
             # Jendela ketat: hanya kunjungan ke-0..i. Inilah satu-satunya tempat
             # kebocoran waktu bisa masuk, jadi tidak ada slicing lain di bawah.
@@ -242,12 +254,17 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     feats.index.name = df.index.name
     # Kembalikan pada urutan baris df asli agar dapat langsung disandingkan
     # dengan keluaran tabular.target tanpa merge manual.
-    return feats.reindex(df.index)
+    return feats.reindex(df.index if requested is None else requested)
 
 
-def build_dataset(df: pd.DataFrame, blocks: list[str] | None = None) -> pd.DataFrame:
+def build_dataset(
+    df: pd.DataFrame,
+    blocks: list[str] | None = None,
+    *,
+    output_indices: pd.Index | list | None = None,
+) -> pd.DataFrame:
     """Fitur + kolom identitas + provenance, siap digabung dengan label."""
-    feats = build_features(df)
+    feats = build_features(df, output_indices=output_indices)
     keep = ["child_id", "visit_index", "prediction_date", "max_source_date"]  # provenance wajib
     return feats[keep + feature_columns(blocks)]
 

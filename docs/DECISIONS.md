@@ -33,7 +33,7 @@ Dokumen ini juga berfungsi sebagai bahan mentah untuk pembahasan *trade-off* di 
 | M2 | LightGBM + lintasan | snapshot + trajectory | deteriorasi horizon |
 | M3 | LightGBM + lintasan + kontekstual | seluruh fitur | deteriorasi horizon |
 
-**Alasan.** B0 merepresentasikan praktik eksisting (prioritas berdasarkan HAZ terkini) — inilah "before" dalam narasi *before → after*. Selisih M2/M3 terhadap B0 adalah nilai tambah produk yang bisa dikuantifikasi. Selisih M2 terhadap M1 adalah bukti langsung untuk klaim kebaruan "lintasan pertumbuhan multi-waktu".
+**Alasan.** B0 adalah proxy snapshot-only berbasis HAZ terkini, bukan bukti langsung praktik Posyandu yang terobservasi. Selisih M2/M3 terhadap B0 mengukur nilai tambah terhadap proxy tersebut. Selisih M2 terhadap M1 adalah bukti langsung untuk klaim kebaruan "lintasan pertumbuhan multi-waktu".
 
 ---
 
@@ -192,7 +192,7 @@ Opsi 4 tetap merupakan produk yang sah dan jujur; ia mengurangi klaim, bukan men
 
 | ID | Bentuk | Keterangan |
 |---|---|---|
-| B0 | `priority_score = −HAZ_t` | Representasi praktik eksisting: makin rendah HAZ terkini, makin tinggi prioritas |
+| B0 | `priority_score = −HAZ_t` | Proxy snapshot-only: makin rendah HAZ terkini, makin tinggi prioritas |
 | B1 | `priority_score = w₁·(−HAZ_t) + w₂·(−slope_HAZ)` | Bobot ditentukan pada **validation split**, bukan test |
 | B2 | Probabilitas dari logistic regression | |
 

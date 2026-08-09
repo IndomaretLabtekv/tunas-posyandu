@@ -46,10 +46,11 @@
 | C-B7 | Ablasi: snapshot → +lintasan → +kontekstual | ☐ | TAB-05 | §4.2 | |
 | C-B8 | Metrik prioritisasi Precision@K / Recall@K / AUPRC | ☐ | TAB-06 | §4.2 | |
 | C-B9 | Confusion matrix & error analysis | ☐ | TAB-07 | §4.4 | |
-| C-B10 | Uji ketahanan terhadap noise pengukuran & missing values | ☐ | TAB-08 | §4.3 | |
+| C-B10 | Uji ketahanan terhadap noise pengukuran & missing values | ☐ | TAB-08 + `tab08_robustness_*.csv` | §4.3 | |
 | C-B11 | SHAP per anak ditampilkan pada UI | ☐ | TAB-09 | §3.5, §4.5 | |
-| C-B12 | Latency inferensi per prediksi | ☐ | TAB-10 | §4.3 | |
+| C-B12 | Latency inferensi per prediksi pada environment tercatat | ☐ | TAB-10 + `tab10_latency.csv` | §4.3 | |
 | C-B15 | Sensitivity analysis per irisan populasi sintetis | ☐ | TAB-11 | §4.3 | — |
+| C-B16 | Sensitivitas membership pada tie di batas exact Top-K | ☐ | TAB-12 + `tab12_tie_sensitivity.csv` | §4.3 | — |
 | C-B13 | Validitas klinis model pada populasi nyata | **No** | None | Future Work | — |
 | C-B14 | Ambang deteriorasi tervalidasi ahli gizi | **No** | None | Future Work | — |
 

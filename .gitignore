@@ -11,3 +11,5 @@ results/tabular/final/runs/
 
 # Output eksperimen kecil di results/ SENGAJA di-commit — itu jejak angka di paper.
 # Kalau ada file besar, abaikan per-nama, jangan pola *.csv.
+experiments/src/babies/
+experiments/results/overlay/babies/

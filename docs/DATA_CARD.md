@@ -11,7 +11,7 @@ Dokumen ini menjelaskan asal, cara pembangkitan, dan batasan seluruh data yang d
 | `posyandu_synth_v1` | Kohort kunjungan longitudinal sintetis | ~N anak × ~V kunjungan | Melatih & mengevaluasi model risiko | Ya, Hugging Face |
 | `proxy_objects_v1` | Citra objek kaku berukuran diketahui di atas alas marker | ~n citra | Validasi **geometri & konversi ukuran** | Ya, Hugging Face |
 | `proxy_subjects_v1` | Boneka/manekin seukuran bayi + anggota tim berbaring | ~n citra | Validasi **segmentasi, endpoint, QC postur, failure case** | Ya, Hugging Face |
-| `who_lms` | Tabel LMS standar pertumbuhan WHO | Tabel rujukan | Konversi panjang badan → HAZ | Rujukan publik WHO |
+| `who_lms` | 1.462 baris LMS harian resmi WHO, usia 0–730 hari | Tabel rujukan | Konversi panjang badan → HAZ | Ya; provenance di `data/who/provenance.json` |
 
 **Tidak ada citra balita nyata yang dikumpulkan, disimpan, atau didistribusikan dalam versi ini.** Lihat `RESPONSIBLE_AI.md`.
 
@@ -117,5 +117,6 @@ Untuk boneka dan manekin, panjang sebenarnya diketahui sehingga galat endpoint t
 | Versi | Tanggal | Perubahan |
 |---|---|---|
 | v1 | — | Rilis awal |
+| v1-final | 9 Agustus 2026 | Lima kohort final (seed 42, 314, 1618, 2026, 2718), masing-masing 1.200 anak |
 
 Data sintetis dan citra proksi dirilis bersama repositori untuk keperluan reproduksi. Tabel LMS WHO merupakan rujukan publik milik WHO dan hanya digunakan sebagai standar konversi.

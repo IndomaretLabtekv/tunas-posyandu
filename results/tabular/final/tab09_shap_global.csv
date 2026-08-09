@@ -1,0 +1,23 @@
+feature,label,mean_abs_shap
+haz_delta_1visit,Perubahan sejak kunjungan lalu,0.04499
+haz_slope_per_month,Kecepatan perubahan pertumbuhan,0.02313
+haz_t,Status panjang badan saat ini,0.01957
+months_since_haz_peak,Lama sejak pertumbuhan terbaik,0.01694
+haz_delta_3months,Perubahan dalam 3 bulan terakhir,0.01272
+length_cm_t,Panjang badan terukur,0.01065
+length_velocity_cm_per_month,Pertambahan panjang per bulan,0.00907
+haz_range_to_date,Rentang naik-turun pertumbuhan,0.00484
+haz_min_to_date,Titik terendah pertumbuhan,0.00367
+sex_is_male,Jenis kelamin,0.0
+haz_missing_t,Hasil ukur tidak tersedia,0.0
+weight_kg_t,Berat badan terukur,0.0
+age_days,Usia anak,0.0
+measured_by_cv_t,Pengukuran memakai kamera,0.0
+visit_gap_mean,Rata-rata jarak antar kunjungan,0.0
+n_prior_visits,Jumlah kunjungan sebelumnya,0.0
+days_since_first_visit,Lama sejak kunjungan pertama,0.0
+visit_gap_days_t,Jarak dari kunjungan terakhir,0.0
+haz_std_to_date,Kestabilan pertumbuhan,0.0
+haz_max_to_date,Titik tertinggi pertumbuhan,0.0
+ever_stunted_to_date,Pernah berstatus pendek,0.0
+n_consecutive_declines,Penurunan berturut-turut,0.0

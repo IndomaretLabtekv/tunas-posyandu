@@ -28,23 +28,39 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from importlib.metadata import version
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 from tabular.baselines import b0_haz_only, fit_b1, make_b2, rule_stunted_now
-from tabular.evaluate import compare_models, error_analysis, evaluate_all, slice_report
+from tabular.evaluate import (
+    capacity_predictions,
+    compare_models,
+    error_analysis,
+    evaluate_all,
+    slice_report,
+)
 from tabular.features import build_dataset, feature_columns
+from tabular.persist import load_artifact, save_artifact
 from tabular.splits import (
     assert_features_not_future,
     assert_no_child_leakage,
     grouped_split,
     temporal_split,
 )
-from tabular.target import attach_labels, drop_report
+from tabular.target import (
+    HAZ_DROP_THRESHOLD,
+    HORIZON_DAYS,
+    STUNTING_THRESHOLD,
+    WINDOW_TOLERANCE_DAYS,
+    attach_labels,
+    drop_report,
+)
 
 LGB_PARAMS = {
     "objective": "binary",
@@ -97,6 +113,13 @@ def _git_commit() -> str:
         return "unknown"
 
 
+def _git_dirty() -> bool:
+    try:
+        return bool(subprocess.check_output(["git", "status", "--porcelain"], text=True).strip())
+    except Exception:
+        return True
+
+
 def load_dataset(path: Path) -> pd.DataFrame:
     df = pd.read_csv(path, parse_dates=["visit_date"])
     if "haz" not in df.columns:
@@ -140,6 +163,100 @@ def select_index_visits(X: pd.DataFrame, split_kind: str) -> pd.Index:
     idx = picked.index
     assert X.loc[idx, "child_id"].is_unique, "unit evaluasi harus satu baris per anak"
     return idx
+
+
+def deterministic_ranks(scores, tie_break) -> np.ndarray:
+    """Peringkat 1..N dengan tie-break identik dengan pemilihan kapasitas."""
+    scores = np.asarray(scores, dtype=float)
+    tie = np.asarray(tie_break).astype(str)
+    if len(scores) != len(tie) or not np.isfinite(scores).all():
+        raise ValueError("Skor dan tie-break harus sama panjang serta finite.")
+    order = np.lexsort((tie, -scores))
+    ranks = np.empty(len(scores), dtype=int)
+    ranks[order] = np.arange(1, len(scores) + 1)
+    return ranks
+
+
+def representative_error_cases(
+    y_true, primary_scores, snapshot_scores, X: pd.DataFrame, *,
+    k_frac: float, n_examples: int = 3,
+) -> pd.DataFrame:
+    """Pilih kasus audit dengan aturan deterministik, bukan contoh yang dipoles."""
+    y = np.asarray(y_true, dtype=int)
+    primary_scores = np.asarray(primary_scores, dtype=float)
+    snapshot_scores = np.asarray(snapshot_scores, dtype=float)
+    tie = X["child_id"].astype(str).to_numpy()
+    selected = capacity_predictions(primary_scores, k_frac, tie).astype(bool)
+    rank = deterministic_ranks(primary_scores, tie)
+    snapshot_rank = deterministic_ranks(snapshot_scores, tie)
+
+    frame = pd.DataFrame({
+        "row_index": X.index,
+        "child_id": tie,
+        "prediction_date": X["prediction_date"].to_numpy(),
+        "outcome_label": y,
+        "primary_score": primary_scores,
+        "primary_rank": rank,
+        "selected_at_capacity": selected,
+        "snapshot_score": snapshot_scores,
+        "snapshot_rank": snapshot_rank,
+        # Positif = fitur trajectory menaikkan posisi relatif terhadap M1.
+        "trajectory_rank_gain": snapshot_rank - rank,
+    }, index=X.index)
+    for col in (
+        "haz_t", "age_days", "n_prior_visits", "haz_slope_per_month",
+        "haz_delta_1visit", "haz_delta_3months", "n_consecutive_declines",
+        "ever_stunted_to_date", "visit_gap_days_t", "haz_missing_t",
+    ):
+        frame[col] = X[col]
+    frame["latest_haz"] = frame["haz_t"]
+
+    rows = []
+
+    def take(mask, case_type: str, rule: str, sort_cols, ascending=True, limit=n_examples):
+        picked = frame.loc[mask].sort_values(
+            list(sort_cols) + ["child_id"], ascending=([ascending] * len(sort_cols)) + [True]
+        ).head(limit).copy()
+        picked.insert(0, "selection_rule", rule)
+        picked.insert(0, "case_type", case_type)
+        rows.append(picked)
+
+    take(selected & (y == 0), "high_priority_false_positive",
+         "selected negatives with smallest primary rank", ["primary_rank"])
+    take((~selected) & (y == 1), "missed_positive",
+         "unselected positives nearest the capacity boundary", ["primary_rank"])
+
+    k = int(selected.sum())
+    boundary = (rank >= max(1, k - 1)) & (rank <= min(len(rank), k + 2))
+    take(boundary, "capacity_boundary", "ranks K-1 through K+2", ["primary_rank"], limit=4)
+
+    changed = frame["trajectory_rank_gain"].abs()
+    frame["_abs_rank_change"] = changed
+    take(changed > 0, "trajectory_rank_change",
+         "largest absolute rank change versus M1 snapshot", ["_abs_rank_change"], ascending=False)
+
+    sparse = pd.to_numeric(frame["n_prior_visits"], errors="coerce") <= 2
+    take(sparse, "short_or_sparse_history",
+         "highest-ranked cases with at most two prior visits", ["primary_rank"])
+
+    out = pd.concat(rows, ignore_index=True) if rows else pd.DataFrame()
+    return out.drop(columns="_abs_rank_change", errors="ignore")
+
+
+def _history_json(df: pd.DataFrame, child_id: str, prediction_date) -> str:
+    cols = [c for c in ("visit_date", "age_days", "length_cm", "weight_kg", "haz") if c in df]
+    dates = pd.to_datetime(df["visit_date"])
+    history = df.loc[
+        (df["child_id"].astype(str) == str(child_id)) & (dates <= pd.Timestamp(prediction_date)),
+        cols,
+    ].sort_values("visit_date")
+    return history.to_json(orient="records", date_format="iso")
+
+
+def _package_versions() -> dict:
+    return {name: version(name) for name in (
+        "numpy", "pandas", "scikit-learn", "lightgbm", "shap", "joblib"
+    )}
 
 
 def _fit_lgb(X_tr, y_tr, X_val, y_val, cols, cfg: ExperimentConfig):
@@ -240,16 +357,44 @@ def run(cfg: ExperimentConfig) -> dict:
         raise ValueError(f"primary_model {cfg.primary_model!r} tidak ada di daftar model.")
     primary_model, primary_cols = models[cfg.primary_model]
     primary_scores = scores[cfg.primary_model]
+    timestamp_utc = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
     # Satu daftar prioritas global dipakai oleh error analysis DAN slice report,
     # sehingga keduanya menggambarkan keputusan yang sama dengan produk.
-    from tabular.evaluate import capacity_predictions
     selected = capacity_predictions(primary_scores, cfg.operating_k, tie)
 
     error_analysis(y_te, primary_scores, X_te[primary_cols],
                    k_frac=cfg.operating_k, tie_break=tie).to_csv(
         cfg.out_dir / "tab07_error_analysis.csv", index=False
     )
+
+    cases = representative_error_cases(
+        y_te, primary_scores, scores["M1_snapshot"], X_te,
+        k_frac=cfg.operating_k,
+    )
+    cases["history_json"] = [
+        _history_json(df, row.child_id, row.prediction_date)
+        for row in cases.itertuples()
+    ]
+    cases.to_csv(cfg.out_dir / "tab07_representative_cases.csv", index=False)
+    primary_rank = deterministic_ranks(primary_scores, tie)
+    snapshot_rank = deterministic_ranks(scores["M1_snapshot"], tie)
+    y_array = y_te.to_numpy()
+    k = int(selected.sum())
+    candidate_counts = {
+        "high_priority_false_positive": int((selected.astype(bool) & (y_array == 0)).sum()),
+        "missed_positive": int((~selected.astype(bool) & (y_array == 1)).sum()),
+        "capacity_boundary": int(((primary_rank >= max(1, k - 1))
+                                   & (primary_rank <= min(len(primary_rank), k + 2))).sum()),
+        "trajectory_rank_change": int((primary_rank != snapshot_rank).sum()),
+        "short_or_sparse_history": int((X_te["n_prior_visits"] <= 2).sum()),
+    }
+    selected_counts = cases["case_type"].value_counts().to_dict()
+    pd.DataFrame([
+        {"case_type": name, "candidate_count": count,
+         "selected_count": int(selected_counts.get(name, 0))}
+        for name, count in candidate_counts.items()
+    ]).to_csv(cfg.out_dir / "tab07_case_selection_summary.csv", index=False)
 
     slices = pd.DataFrame({
         "sex_is_male": X_te["sex_is_male"].map({1.0: "M", 0.0: "F"}),
@@ -269,52 +414,78 @@ def run(cfg: ExperimentConfig) -> dict:
                                           "M2_plus_trajectory", "M3_plus_contextual"])]
     ablation.to_csv(cfg.out_dir / "tab05_ablation.csv", index=False)
 
-    # TAB-09: atribusi SHAP untuk model utama.
-    try:
-        from tabular.explain import Explainer
-        ex = Explainer(primary_model, primary_cols)
-        ex.global_importance(X_te[primary_cols]).to_csv(
-            cfg.out_dir / "tab09_shap_global.csv", index=False
-        )
-        # Contoh penjelasan per anak: prioritas tertinggi, untuk demo & paper.
-        # Urutan memakai tie-break yang sama dengan ranking utama.
-        top_order = np.lexsort((X_te["child_id"].astype(str).to_numpy(), -primary_scores))[:10]
-        top_idx = X_te.index[top_order]
-        expl = ex.explain_batch(X_te.loc[top_idx, primary_cols], top_k=5)
-
-        # `row_index` adalah indeks internal DataFrame -- tidak berarti apa pun
-        # bagi frontend. Sertakan identitas anak, tanggal, peringkat, dan skor
-        # supaya artefak ini benar-benar dapat dipakai langsung.
-        score_by_index = pd.Series(primary_scores, index=X_te.index)
-        rank_by_index = pd.Series(np.arange(1, len(top_idx) + 1), index=top_idx)
-        expl.insert(1, "child_id", expl["row_index"].map(X_te["child_id"]))
-        expl.insert(2, "prediction_date", expl["row_index"].map(X_te["prediction_date"]))
-        expl.insert(3, "priority_rank", expl["row_index"].map(rank_by_index))
-        expl.insert(4, "priority_score", expl["row_index"].map(score_by_index))
-        expl.to_csv(cfg.out_dir / "tab09_shap_top_children.csv", index=False)
-        shap_ok = True
-    except ImportError:
-        # Paket shap opsional; ketiadaannya tidak boleh menggagalkan eksperimen.
-        shap_ok = False
-
     # Persistensi model utama. Tanpa ini, API tidak dapat memuat model dan
     # memanggil Explainer pada anak baru -- eksperimen selesai tetapi produk
     # belum bisa memakainya.
     model_path = cfg.out_dir / "primary_model.joblib"
-    try:
-        import joblib
-        joblib.dump(
-            {"model": primary_model, "feature_names": primary_cols,
-             "model_name": cfg.primary_model, "operating_k": cfg.operating_k},
-            model_path,
-        )
-        model_saved = True
-    except ImportError:
-        model_saved = False
+    data_config_path = cfg.data_path.with_suffix(".config.json")
+    data_config = (
+        json.loads(data_config_path.read_text(encoding="utf-8"))
+        if data_config_path.exists() else {}
+    )
+    artifact_metadata = {
+        "model_name": cfg.primary_model,
+        "model_version": "tunas-tabular-m2-v1",
+        "created_utc": timestamp_utc,
+        "git_commit": _git_commit(),
+        "git_dirty": _git_dirty(),
+        "feature_schema": [{"name": c, "dtype": str(X_tr[c].dtype)} for c in primary_cols],
+        "training_config": {
+            "split_kind": split.kind,
+            "operating_k": cfg.operating_k,
+            "early_stopping_rounds": cfg.early_stopping_rounds,
+            "lgb_params": LGB_PARAMS,
+            "selection_rule": cfg.selection_rule,
+        },
+        "seeds": {"model_and_split": cfg.seed, "generator": data_config.get("seed")},
+        "target": {
+            "name": "prospective_growth_deterioration",
+            "horizon_days": HORIZON_DAYS,
+            "window_tolerance_days": WINDOW_TOLERANCE_DAYS,
+            "haz_drop_threshold": HAZ_DROP_THRESHOLD,
+            "stunting_crossing_threshold": STUNTING_THRESHOLD,
+        },
+        "data": {"path": str(cfg.data_path), "generator_config": data_config},
+        "environment": {"python": sys.version.split()[0], "packages": _package_versions()},
+    }
+    save_artifact(model_path, primary_model, primary_cols, artifact_metadata)
+
+    # TAB-09 memakai model yang SUDAH dimuat ulang dari artefak, sehingga
+    # penjelasan tidak mungkin berasal dari objek in-memory yang berbeda.
+    from tabular.explain import Explainer
+    persisted = load_artifact(model_path)
+    ex = Explainer(persisted["model"], persisted["feature_names"])
+    ex.global_importance(X_te[primary_cols]).to_csv(
+        cfg.out_dir / "tab09_shap_global.csv", index=False
+    )
+    top_order = np.lexsort((X_te["child_id"].astype(str).to_numpy(), -primary_scores))[:10]
+    top_idx = X_te.index[top_order]
+    expl = ex.explain_batch(X_te.loc[top_idx, primary_cols], top_k=5)
+
+    score_by_index = pd.Series(primary_scores, index=X_te.index)
+    rank_by_index = pd.Series(deterministic_ranks(primary_scores, tie), index=X_te.index)
+    expl.insert(1, "child_id", expl["row_index"].map(X_te["child_id"]))
+    expl.insert(2, "prediction_date", expl["row_index"].map(X_te["prediction_date"]))
+    expl.insert(3, "priority_rank", expl["row_index"].map(rank_by_index))
+    expl.insert(4, "priority_score", expl["row_index"].map(score_by_index))
+    expl.to_csv(cfg.out_dir / "tab09_shap_top_children.csv", index=False)
+
+    representative_idx = pd.Index(cases["row_index"].drop_duplicates())
+    representative_shap = ex.explain_batch(X_te.loc[representative_idx, primary_cols], top_k=5)
+    representative_shap = cases[
+        ["row_index", "case_type", "selection_rule", "child_id", "prediction_date",
+         "outcome_label", "primary_score", "primary_rank"]
+    ].merge(representative_shap, on="row_index", how="left")
+    representative_shap["explanation_kind"] = "feature_attribution_non_causal"
+    representative_shap["shap_scale"] = "raw_model_log_odds"
+    representative_shap.to_csv(
+        cfg.out_dir / "tab09_shap_representative_cases.csv", index=False
+    )
 
     manifest = {
-        "timestamp_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "timestamp_utc": timestamp_utc,
         "git_commit": _git_commit(),
+        "git_dirty": _git_dirty(),
         "data_path": str(cfg.data_path),
         "seed": cfg.seed,
         "split_kind": split.kind,
@@ -338,14 +509,17 @@ def run(cfg: ExperimentConfig) -> dict:
         "lgb_params": LGB_PARAMS,
         "best_iteration": {n: int(m.best_iteration_ or LGB_PARAMS["n_estimators"])
                            for n, (m, _) in models.items()},
-        "shap_artifacts_written": shap_ok,
-        "primary_model_path": str(model_path) if model_saved else None,
+        "shap_artifacts_written": True,
+        "primary_model_path": str(model_path),
+        "model_artifact_metadata": artifact_metadata,
         "n_features": {"snapshot": len(snap), "snapshot+trajectory": len(snap_traj), "full": len(full)},
     }
     (cfg.out_dir / "tab04_manifest.json").write_text(json.dumps(manifest, indent=2))
 
     return {"table": table, "rule_table": rule_table, "manifest": manifest, "drops": drops,
-            "models": models, "scores": scores, "y_test": y_te, "X_test": X_te}
+            "models": models, "scores": scores, "y_test": y_te, "X_test": X_te,
+            "primary_model": primary_model, "primary_cols": primary_cols,
+            "model_path": model_path, "representative_cases": cases}
 
 
 def headline(table: pd.DataFrame, k_pct: int = 20) -> str:

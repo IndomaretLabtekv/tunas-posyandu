@@ -1,0 +1,201 @@
+{
+  "model_name": "M2_plus_trajectory",
+  "model_version": "tunas-tabular-m2-v1",
+  "created_utc": "2026-08-09T15:05:54+00:00",
+  "git_commit": "30fa13b",
+  "feature_schema": [
+    {
+      "name": "age_days",
+      "dtype": "float64"
+    },
+    {
+      "name": "sex_is_male",
+      "dtype": "float64"
+    },
+    {
+      "name": "haz_t",
+      "dtype": "float64"
+    },
+    {
+      "name": "weight_kg_t",
+      "dtype": "float64"
+    },
+    {
+      "name": "length_cm_t",
+      "dtype": "float64"
+    },
+    {
+      "name": "haz_missing_t",
+      "dtype": "float64"
+    },
+    {
+      "name": "measured_by_cv_t",
+      "dtype": "float64"
+    },
+    {
+      "name": "n_prior_visits",
+      "dtype": "float64"
+    },
+    {
+      "name": "days_since_first_visit",
+      "dtype": "float64"
+    },
+    {
+      "name": "visit_gap_days_t",
+      "dtype": "float64"
+    },
+    {
+      "name": "visit_gap_mean",
+      "dtype": "float64"
+    },
+    {
+      "name": "haz_slope_per_month",
+      "dtype": "float64"
+    },
+    {
+      "name": "haz_delta_1visit",
+      "dtype": "float64"
+    },
+    {
+      "name": "haz_delta_3months",
+      "dtype": "float64"
+    },
+    {
+      "name": "haz_min_to_date",
+      "dtype": "float64"
+    },
+    {
+      "name": "haz_max_to_date",
+      "dtype": "float64"
+    },
+    {
+      "name": "haz_range_to_date",
+      "dtype": "float64"
+    },
+    {
+      "name": "haz_std_to_date",
+      "dtype": "float64"
+    },
+    {
+      "name": "n_consecutive_declines",
+      "dtype": "float64"
+    },
+    {
+      "name": "ever_stunted_to_date",
+      "dtype": "float64"
+    },
+    {
+      "name": "months_since_haz_peak",
+      "dtype": "float64"
+    },
+    {
+      "name": "length_velocity_cm_per_month",
+      "dtype": "float64"
+    }
+  ],
+  "training_config": {
+    "split_kind": "grouped",
+    "operating_k": 0.2,
+    "early_stopping_rounds": 50,
+    "lgb_params": {
+      "objective": "binary",
+      "learning_rate": 0.05,
+      "num_leaves": 31,
+      "min_child_samples": 40,
+      "subsample": 0.8,
+      "subsample_freq": 1,
+      "colsample_bytree": 0.8,
+      "reg_lambda": 1.0,
+      "n_estimators": 600,
+      "verbose": -1
+    },
+    "selection_rule": "pre-specified trajectory model (bukan dipilih dari test)"
+  },
+  "seeds": {
+    "model_and_split": 42,
+    "generator": 42
+  },
+  "target": {
+    "name": "prospective_growth_deterioration",
+    "horizon_days": 91,
+    "window_tolerance_days": 42,
+    "haz_drop_threshold": 0.5,
+    "stunting_crossing_threshold": -2.0
+  },
+  "data": {
+    "path": "data/synth/final/posyandu_synth_v1_seed_42.csv",
+    "generator_config": {
+      "n_children": 1200,
+      "seed": 42,
+      "haz0_mean": -0.85,
+      "haz0_sd": 1.15,
+      "velocity_mean": -0.015,
+      "velocity_sd": 0.045,
+      "changepoint_prob": 0.3,
+      "changepoint_delta_sd": 0.06,
+      "w_ses": 0.02,
+      "w_immunization": 0.01,
+      "w_exclusive_bf": 0.008,
+      "w_birth_weight": 0.012,
+      "length_noise_sd_cm": 0.7,
+      "weight_noise_sd_kg": 0.15,
+      "weight_haz_coupling": 0.3,
+      "exclusive_bf_known_after_days": 180,
+      "first_visit_age_days_max": 90,
+      "visit_interval_days": 30,
+      "visit_jitter_days": 6,
+      "base_attendance": 0.82,
+      "ses_attendance_effect": 0.12,
+      "min_visits": 2,
+      "missing_length_prob": 0.03,
+      "missing_weight_prob": 0.05,
+      "cv_usage_prob": 0.6,
+      "start_date": "2024-01-01",
+      "enrollment_window_days": 240
+    }
+  },
+  "environment": {
+    "python": "3.12.3",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.5",
+      "scikit-learn": "1.9.0",
+      "lightgbm": "4.7.0",
+      "shap": "0.52.0",
+      "joblib": "1.5.3"
+    }
+  },
+  "artifact_version": 1,
+  "artifact_path": "results/tabular/final/primary_model.joblib",
+  "feature_names": [
+    "age_days",
+    "sex_is_male",
+    "haz_t",
+    "weight_kg_t",
+    "length_cm_t",
+    "haz_missing_t",
+    "measured_by_cv_t",
+    "n_prior_visits",
+    "days_since_first_visit",
+    "visit_gap_days_t",
+    "visit_gap_mean",
+    "haz_slope_per_month",
+    "haz_delta_1visit",
+    "haz_delta_3months",
+    "haz_min_to_date",
+    "haz_max_to_date",
+    "haz_range_to_date",
+    "haz_std_to_date",
+    "n_consecutive_declines",
+    "ever_stunted_to_date",
+    "months_since_haz_peak",
+    "length_velocity_cm_per_month"
+  ],
+  "persistence_check": {
+    "passed": true,
+    "n_predictions": 8,
+    "absolute_tolerance": 1e-12,
+    "max_absolute_difference": 8.326672684688674e-17,
+    "fresh_process_command": "python -m tabular.persist --model results/tabular/final/primary_model.joblib --input results/tabular/final/persistence_fixture.csv --output results/tabular/final/persistence_fresh_predictions.csv"
+  }
+}

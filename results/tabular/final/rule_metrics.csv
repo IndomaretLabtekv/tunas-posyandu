@@ -1,0 +1,11 @@
+generator_seed,random_seed,evaluation,model,auprc,roc_auc,raw_brier,recall@5%,precision@5%,lift@5%,recall@10%,precision@10%,lift@10%,recall@20%,precision@20%,lift@20%,n,n_positive,prevalence,precision,recall,f1,tp,fp,fn,tn,threshold,operating_point,score_type
+42,42,grouped,RULE_haz_lt_-2,,,,,,,,,,,,,240,26,0.1083,0.1176,0.3077,0.1702,8,60,18,154,0.5,rule(>=0.5),binary_rule
+42,42,temporal,RULE_haz_lt_-2,,,,,,,,,,,,,1063,140,0.1317,0.144,0.2643,0.1864,37,220,103,703,0.5,rule(>=0.5),binary_rule
+314,314,grouped,RULE_haz_lt_-2,,,,,,,,,,,,,240,25,0.1042,0.1786,0.4,0.2469,10,46,15,169,0.5,rule(>=0.5),binary_rule
+314,314,temporal,RULE_haz_lt_-2,,,,,,,,,,,,,1062,134,0.1262,0.1468,0.2761,0.1917,37,215,97,713,0.5,rule(>=0.5),binary_rule
+1618,1618,grouped,RULE_haz_lt_-2,,,,,,,,,,,,,240,28,0.1167,0.0606,0.1429,0.0851,4,62,24,150,0.5,rule(>=0.5),binary_rule
+1618,1618,temporal,RULE_haz_lt_-2,,,,,,,,,,,,,1069,143,0.1338,0.1559,0.2867,0.202,41,222,102,704,0.5,rule(>=0.5),binary_rule
+2026,2026,grouped,RULE_haz_lt_-2,,,,,,,,,,,,,240,18,0.075,0.0882,0.3333,0.1395,6,62,12,160,0.5,rule(>=0.5),binary_rule
+2026,2026,temporal,RULE_haz_lt_-2,,,,,,,,,,,,,1052,140,0.1331,0.1529,0.2786,0.1975,39,216,101,696,0.5,rule(>=0.5),binary_rule
+2718,2718,grouped,RULE_haz_lt_-2,,,,,,,,,,,,,240,27,0.1125,0.0893,0.1852,0.1205,5,51,22,162,0.5,rule(>=0.5),binary_rule
+2718,2718,temporal,RULE_haz_lt_-2,,,,,,,,,,,,,1076,156,0.145,0.2226,0.3782,0.2803,59,206,97,714,0.5,rule(>=0.5),binary_rule

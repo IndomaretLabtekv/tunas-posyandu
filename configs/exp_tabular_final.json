@@ -1,0 +1,15 @@
+{
+  "experiment_id": "TAB-FINAL-01",
+  "dataset_version": "posyandu_synth_v1",
+  "n_children": 1200,
+  "seeds": [42, 314, 1618, 2026, 2718],
+  "splits": ["grouped", "temporal"],
+  "k_fractions": [0.05, 0.1, 0.2],
+  "operating_k": 0.2,
+  "primary_model": "M2_plus_trajectory",
+  "primary_seed": 42,
+  "primary_split": "grouped",
+  "data_dir": "data/synth/final",
+  "output_dir": "results/tabular/final",
+  "summary_path": "docs/FINAL_TABULAR_RESULTS.md"
+}

@@ -17,6 +17,8 @@ tulis ke `tests/who_reference_cases.csv` dengan kolom:
     sex,age_days,length_cm,expected_haz
 """
 
+import hashlib
+import json
 from pathlib import Path
 
 import numpy as np
@@ -35,6 +37,7 @@ from tabular.who_lms import (
 ROOT = Path(__file__).resolve().parents[1]
 WHO_TABLE = ROOT / "data" / "who" / "lhfa_lms.csv"
 REF_CASES = Path(__file__).resolve().parent / "who_reference_cases.csv"
+PROVENANCE = ROOT / "data" / "who" / "provenance.json"
 
 
 @pytest.fixture
@@ -179,6 +182,13 @@ def test_cocok_dengan_kasus_rujukan_who():
         f"DEC-009 memerlukan minimal 8 kasus rujukan WHO; ditemukan {len(cases)}. "
         "File yang hanya berisi header akan membuat test ini lulus tanpa menguji apa pun."
     )
+    sexes = cases["sex"].astype(str).str.upper()
+    ages = pd.to_numeric(cases["age_days"], errors="coerce")
+    expected = pd.to_numeric(cases["expected_haz"], errors="coerce")
+    assert set(sexes) == {"M", "F"}
+    assert ages.min() <= 1 and ages.max() >= 700, "Kasus batas bawah/atas belum tercakup."
+    assert (expected < 0).any() and (expected > 0).any()
+    assert np.isclose(expected, -2.0).any(), "Kasus sekitar ambang HAZ=-2 belum tercakup."
 
     # Toleransi bergantung sumber rujukan:
     #   0.01 -> keluaran WHO Anthro (presisi penuh)
@@ -200,6 +210,39 @@ def test_cocok_dengan_kasus_rujukan_who():
                 f"harap {r.expected_haz} (tol {tol}), dapat {got:.4f}"
             )
     assert not errors, "Selisih terhadap rujukan WHO:\n" + "\n".join(errors)
+
+
+@pytest.mark.skipif(not PROVENANCE.exists(), reason="Provenance WHO belum disiapkan.")
+def test_provenance_who_machine_readable():
+    metadata = json.loads(PROVENANCE.read_text(encoding="utf-8"))
+    assert metadata["source_organization"] == "World Health Organization"
+    assert metadata["retrieved_at"]
+    assert metadata["scope"] == "Length-for-age, recumbent, sexes M/F, ages 0-730 days"
+    assert len(metadata["sources"]) == 3
+    source = metadata["sources"][0]
+    raw = ROOT / source["local_path"]
+    assert raw.exists()
+    assert hashlib.sha256(raw.read_bytes()).hexdigest() == source["extracted_file_sha256"]
+
+
+def test_importer_tabel_harian_resmi_memilih_recumbent_dan_memetakan_sex():
+    from scripts.prepare_who_tables import _normalize_official_sas
+
+    raw = pd.DataFrame({
+        "sex": [1.0, 2.0, 1.0],
+        "age": [0.0, 730.0, 731.0],
+        "l": [1.0, 1.0, 1.0],
+        "m": [49.8842, 86.4008, 87.1303],
+        "s": [0.03795, 0.03733, 0.03508],
+        "loh": [b"L", b"L", b"H"],
+    })
+
+    got = _normalize_official_sas(raw)
+
+    assert got[["sex", "age_days"]].to_dict("records") == [
+        {"sex": "F", "age_days": 730.0},
+        {"sex": "M", "age_days": 0.0},
+    ]
 
 
 def test_dec009_belum_terpenuhi_bila_rujukan_belum_ada():

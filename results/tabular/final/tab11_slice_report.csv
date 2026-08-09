@@ -1,0 +1,6 @@
+slice,value,n,underpowered,prevalence,auprc,recall_at_global_capacity,selection_rate
+sex_is_male,F,111,False,0.0811,0.1654,0.1111,0.1171
+sex_is_male,M,129,False,0.1318,0.1996,0.4706,0.2713
+age_bin,12-18bln,5,True,0.0,,,0.4
+age_bin,18-24bln,235,False,0.1106,0.1813,0.3462,0.1957
+history_bin,6+,240,False,0.1083,0.1761,0.3462,0.2

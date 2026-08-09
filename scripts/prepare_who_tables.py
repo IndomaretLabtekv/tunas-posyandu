@@ -2,14 +2,22 @@
 
 Nilai LMS TIDAK di-hardcode di repositori ini. Unduh sendiri dari
 WHO Child Growth Standards (Length/height-for-age, boys & girls, tabel harian
-atau bulanan dengan kolom L, M, S), lalu jalankan skrip ini.
+atau bulanan dengan kolom L, M, S), lalu jalankan skrip ini. Sumber yang dipakai
+repositori ini adalah tabel harian ``lenanthro.sas7bdat`` dari paket SAS resmi
+WHO ``igrowup-sas.zip``::
+
+    python -m scripts.prepare_who_tables \
+        --sas data/who/raw/lenanthro.sas7bdat \
+        --out data/who/lhfa_lms.csv
+
+Berkas Excel terpisah per jenis kelamin tetap didukung::
 
     python -m scripts.prepare_who_tables \
         --boys  raw/lhfa_boys_0-to-2-years_zscores.txt \
         --girls raw/lhfa_girls_0-to-2-years_zscores.txt \
         --out   data/who/lhfa_lms.csv
 
-Skrip menerima .txt/.tsv/.csv/.xlsx dan mendeteksi pemisah secara otomatis.
+Skrip menerima .sas7bdat, .txt/.tsv/.csv/.xlsx dan mendeteksi pemisah teks.
 Membaca .xlsx membutuhkan `openpyxl` (sudah ada di requirements.txt).
 Kolom usia boleh bernama Day/Days/Month/Months (case-insensitive); bila dalam
 bulan, dikonversi ke hari memakai 30.4375 hari/bulan.
@@ -35,6 +43,8 @@ CANONICAL = ["sex", "age_days", "L", "M", "S"]
 
 
 def _read_any(path: Path) -> pd.DataFrame:
+    if path.suffix.lower() == ".sas7bdat":
+        return pd.read_sas(path, encoding="utf-8")
     if path.suffix.lower() == ".xlsx":
         try:
             return pd.read_excel(path, engine="openpyxl")
@@ -80,19 +90,55 @@ def _normalize(df: pd.DataFrame, sex: str) -> pd.DataFrame:
     return out.dropna().sort_values("age_days").reset_index(drop=True)
 
 
+def _normalize_official_sas(df: pd.DataFrame) -> pd.DataFrame:
+    """Normalisasi tabel harian ``lenanthro`` dari paket SAS resmi WHO."""
+    cols = {c.strip().lower(): c for c in df.columns}
+    required = {"sex", "age", "l", "m", "s", "loh"}
+    missing = required - set(cols)
+    if missing:
+        raise SystemExit(f"Kolom tabel lenanthro hilang: {sorted(missing)}")
+
+    loh = df[cols["loh"]].map(
+        lambda value: value.decode() if isinstance(value, bytes) else str(value)
+    ).str.upper()
+    source = df.loc[loh == "L"]
+    sex = pd.to_numeric(source[cols["sex"]], errors="coerce").map({1: "M", 2: "F"})
+    if sex.isna().any():
+        raise SystemExit("Kolom sex lenanthro harus memakai kode WHO 1=male, 2=female.")
+
+    out = pd.DataFrame({
+        "sex": sex,
+        "age_days": pd.to_numeric(source[cols["age"]], errors="coerce"),
+        "L": pd.to_numeric(source[cols["l"]], errors="coerce"),
+        "M": pd.to_numeric(source[cols["m"]], errors="coerce"),
+        "S": pd.to_numeric(source[cols["s"]], errors="coerce"),
+    })
+    return out.dropna().sort_values(["sex", "age_days"]).reset_index(drop=True)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--boys", required=True, type=Path)
-    ap.add_argument("--girls", required=True, type=Path)
+    source = ap.add_mutually_exclusive_group(required=True)
+    source.add_argument("--sas", type=Path,
+                        help="Tabel gabungan lenanthro.sas7bdat dari paket SAS resmi WHO.")
+    source.add_argument("--boys", type=Path)
+    ap.add_argument("--girls", type=Path)
     ap.add_argument("--out", type=Path, default=Path("data/who/lhfa_lms.csv"))
     ap.add_argument("--max-age-days", type=int, default=730,
                     help="Batas usia MVP (protokol recumbent, DEC-005).")
     args = ap.parse_args()
 
-    frames = [
-        _normalize(_read_any(args.boys), "M"),
-        _normalize(_read_any(args.girls), "F"),
-    ]
+    if args.sas:
+        if args.girls:
+            ap.error("--girls hanya dipakai bersama --boys, bukan --sas.")
+        frames = [_normalize_official_sas(_read_any(args.sas))]
+    else:
+        if not args.girls:
+            ap.error("--boys memerlukan --girls.")
+        frames = [
+            _normalize(_read_any(args.boys), "M"),
+            _normalize(_read_any(args.girls), "F"),
+        ]
     df = pd.concat(frames, ignore_index=True)
     before = len(df)
 

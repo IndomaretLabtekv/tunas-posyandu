@@ -122,14 +122,30 @@ Dataset sintetis dan trained weights di-host di Hugging Face (link disubmit terp
 python scripts/download_artifacts.py   # unduh dari Hugging Face ke ./artifacts
 ```
 
+Tabel LMS length-for-age resmi WHO untuk usia 0–730 hari sudah tersedia di
+`data/who/lhfa_lms.csv`. Sumber, checksum, transformasi, dan tabel pembanding
+independen dicatat di `data/who/provenance.json`.
+
 ### Reproduksi hasil paper
 
 ```bash
 python -m cv.evaluate   --config configs/exp_cv_00.yaml    # CV-00 plane-offset stress test
-python -m tabular.train --config configs/exp_tab_04.yaml   # → hasil Tabel 2 paper
+python -m tabular.final_experiment --config configs/exp_tabular_final.json
 ```
 
-> Setiap perintah di atas tersedia setelah eksperimen terkait dijalankan dan config-nya di-commit. Status tiap eksperimen ada di [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md); config yang belum ada berarti eksperimennya belum berjalan. Seluruh eksperimen memakai seed tetap dan split yang disimpan.
+Perintah tabular membangkitkan lima kohort sintetis, menjalankan B0/B1/B2/M1/M2/M3
+pada grouped dan temporal holdout, lalu menulis seluruh bukti ke
+`results/tabular/final/`. Ringkasan terukur ada di
+[`docs/FINAL_TABULAR_RESULTS.md`](docs/FINAL_TABULAR_RESULTS.md).
+
+Verifikasi model tersimpan pada fixture tetap, di proses baru:
+
+```bash
+python -m tabular.persist \
+  --model results/tabular/final/primary_model.joblib \
+  --input results/tabular/final/persistence_fixture.csv \
+  --output /tmp/tunas_predictions.csv
+```
 
 ## 6. Alur demo (untuk penguji)
 

@@ -1,0 +1,51 @@
+row_index,child_id,prediction_date,priority_rank,priority_score,rank,feature,label,value,shap_value,direction
+262,C00013,2026-05-02,1,0.1850535916574116,1,haz_slope_per_month,Kecepatan perubahan pertumbuhan,-0.0747215898299273,0.0493,menaikkan
+262,C00013,2026-05-02,1,0.1850535916574116,2,months_since_haz_peak,Lama sejak pertumbuhan terbaik,18.562628336755647,0.0464,menaikkan
+262,C00013,2026-05-02,1,0.1850535916574116,3,haz_delta_1visit,Perubahan sejak kunjungan lalu,0.29686983998636096,0.0341,menaikkan
+262,C00013,2026-05-02,1,0.1850535916574116,4,haz_t,Status panjang badan saat ini,-2.618271982820944,0.0209,menaikkan
+262,C00013,2026-05-02,1,0.1850535916574116,5,length_cm_t,Panjang badan terukur,78.4,-0.0073,menurunkan
+1268,C00067,2026-01-16,2,0.1850535916574116,1,haz_slope_per_month,Kecepatan perubahan pertumbuhan,-0.061435140747012285,0.0578,menaikkan
+1268,C00067,2026-01-16,2,0.1850535916574116,2,months_since_haz_peak,Lama sejak pertumbuhan terbaik,18.759753593429156,0.046,menaikkan
+1268,C00067,2026-01-16,2,0.1850535916574116,3,haz_delta_1visit,Perubahan sejak kunjungan lalu,0.1821311539137067,0.0436,menaikkan
+1268,C00067,2026-01-16,2,0.1850535916574116,4,haz_t,Status panjang badan saat ini,-3.397681348345884,0.0177,menaikkan
+1268,C00067,2026-01-16,2,0.1850535916574116,5,haz_range_to_date,Rentang naik-turun pertumbuhan,1.8091436833694603,-0.0088,menurunkan
+2190,C00117,2026-02-18,3,0.1850535916574116,1,haz_t,Status panjang badan saat ini,-2.004034777728242,0.0609,menaikkan
+2190,C00117,2026-02-18,3,0.1850535916574116,2,haz_slope_per_month,Kecepatan perubahan pertumbuhan,-0.04722193627345007,0.0577,menaikkan
+2190,C00117,2026-02-18,3,0.1850535916574116,3,months_since_haz_peak,Lama sejak pertumbuhan terbaik,16.854209445585216,0.046,menaikkan
+2190,C00117,2026-02-18,3,0.1850535916574116,4,haz_range_to_date,Rentang naik-turun pertumbuhan,1.477508322952668,-0.0099,menurunkan
+2190,C00117,2026-02-18,3,0.1850535916574116,5,length_cm_t,Panjang badan terukur,80.1,-0.0093,menurunkan
+2287,C00122,2025-08-14,4,0.1850535916574116,1,haz_delta_1visit,Perubahan sejak kunjungan lalu,0.14450289915874137,0.0505,menaikkan
+2287,C00122,2025-08-14,4,0.1850535916574116,2,months_since_haz_peak,Lama sejak pertumbuhan terbaik,12.648870636550308,0.0464,menaikkan
+2287,C00122,2025-08-14,4,0.1850535916574116,3,haz_slope_per_month,Kecepatan perubahan pertumbuhan,-0.07414576757250899,0.0339,menaikkan
+2287,C00122,2025-08-14,4,0.1850535916574116,4,haz_t,Status panjang badan saat ini,-2.7176794567436944,0.017,menaikkan
+2287,C00122,2025-08-14,4,0.1850535916574116,5,haz_range_to_date,Rentang naik-turun pertumbuhan,1.339020781048384,-0.0134,menurunkan
+3887,C00207,2026-01-02,5,0.1850535916574116,1,haz_slope_per_month,Kecepatan perubahan pertumbuhan,-0.0547884601445974,0.0514,menaikkan
+3887,C00207,2026-01-02,5,0.1850535916574116,2,months_since_haz_peak,Lama sejak pertumbuhan terbaik,16.55852156057495,0.0479,menaikkan
+3887,C00207,2026-01-02,5,0.1850535916574116,3,haz_delta_1visit,Perubahan sejak kunjungan lalu,0.02838739362027054,0.0478,menaikkan
+3887,C00207,2026-01-02,5,0.1850535916574116,4,haz_t,Status panjang badan saat ini,-3.8664741141773247,0.0163,menaikkan
+3887,C00207,2026-01-02,5,0.1850535916574116,5,haz_min_to_date,Titik terendah pertumbuhan,-3.894861507797595,-0.012,menurunkan
+6342,C00335,2025-12-15,6,0.1850535916574116,1,haz_slope_per_month,Kecepatan perubahan pertumbuhan,-0.09091218165188042,0.0608,menaikkan
+6342,C00335,2025-12-15,6,0.1850535916574116,2,months_since_haz_peak,Lama sejak pertumbuhan terbaik,20.59958932238193,0.046,menaikkan
+6342,C00335,2025-12-15,6,0.1850535916574116,3,haz_delta_1visit,Perubahan sejak kunjungan lalu,0.18697619644977026,0.0321,menaikkan
+6342,C00335,2025-12-15,6,0.1850535916574116,4,haz_t,Status panjang badan saat ini,-2.9321136605136795,0.0213,menaikkan
+6342,C00335,2025-12-15,6,0.1850535916574116,5,length_cm_t,Panjang badan terukur,77.5,-0.0093,menurunkan
+7134,C00376,2025-09-03,7,0.1850535916574116,1,haz_slope_per_month,Kecepatan perubahan pertumbuhan,-0.10404886849475023,0.0599,menaikkan
+7134,C00376,2025-09-03,7,0.1850535916574116,2,months_since_haz_peak,Lama sejak pertumbuhan terbaik,19.975359342915812,0.0487,menaikkan
+7134,C00376,2025-09-03,7,0.1850535916574116,3,haz_delta_1visit,Perubahan sejak kunjungan lalu,0.31324302015276984,0.0359,menaikkan
+7134,C00376,2025-09-03,7,0.1850535916574116,4,haz_t,Status panjang badan saat ini,-1.5886590270669485,0.0174,menaikkan
+7134,C00376,2025-09-03,7,0.1850535916574116,5,haz_range_to_date,Rentang naik-turun pertumbuhan,2.3326507445108158,-0.0093,menurunkan
+7789,C00410,2026-04-01,8,0.1850535916574116,1,months_since_haz_peak,Lama sejak pertumbuhan terbaik,18.496919917864478,0.0473,menaikkan
+7789,C00410,2026-04-01,8,0.1850535916574116,2,haz_delta_1visit,Perubahan sejak kunjungan lalu,0.03880992987286769,0.0456,menaikkan
+7789,C00410,2026-04-01,8,0.1850535916574116,3,haz_slope_per_month,Kecepatan perubahan pertumbuhan,-0.12562361339932507,0.0366,menaikkan
+7789,C00410,2026-04-01,8,0.1850535916574116,4,haz_t,Status panjang badan saat ini,-2.930379351369621,0.0209,menaikkan
+7789,C00410,2026-04-01,8,0.1850535916574116,5,haz_delta_3months,Perubahan dalam 3 bulan terakhir,-0.45714729672003473,-0.0081,menurunkan
+8400,C00442,2026-02-06,9,0.1850535916574116,1,haz_slope_per_month,Kecepatan perubahan pertumbuhan,-0.06911909867589995,0.0608,menaikkan
+8400,C00442,2026-02-06,9,0.1850535916574116,2,months_since_haz_peak,Lama sejak pertumbuhan terbaik,16.55852156057495,0.046,menaikkan
+8400,C00442,2026-02-06,9,0.1850535916574116,3,haz_delta_1visit,Perubahan sejak kunjungan lalu,0.22587016970945495,0.0321,menaikkan
+8400,C00442,2026-02-06,9,0.1850535916574116,4,haz_t,Status panjang badan saat ini,-2.107006954379634,0.0213,menaikkan
+8400,C00442,2026-02-06,9,0.1850535916574116,5,length_cm_t,Panjang badan terukur,79.1,-0.0093,menurunkan
+11702,C00617,2025-11-16,10,0.1850535916574116,1,months_since_haz_peak,Lama sejak pertumbuhan terbaik,17.872689938398356,0.0464,menaikkan
+11702,C00617,2025-11-16,10,0.1850535916574116,2,haz_slope_per_month,Kecepatan perubahan pertumbuhan,-0.04528669979374516,0.0462,menaikkan
+11702,C00617,2025-11-16,10,0.1850535916574116,3,haz_t,Status panjang badan saat ini,-1.7399312317215911,0.0315,menaikkan
+11702,C00617,2025-11-16,10,0.1850535916574116,4,haz_delta_1visit,Perubahan sejak kunjungan lalu,0.15844051576828533,0.0314,menaikkan
+11702,C00617,2025-11-16,10,0.1850535916574116,5,haz_range_to_date,Rentang naik-turun pertumbuhan,1.4570944855454027,-0.0099,menurunkan

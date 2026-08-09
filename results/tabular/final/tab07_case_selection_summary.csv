@@ -1,0 +1,6 @@
+case_type,candidate_count,selected_count
+high_priority_false_positive,39,3
+missed_positive,17,3
+capacity_boundary,4,4
+trajectory_rank_change,239,3
+short_or_sparse_history,0,0

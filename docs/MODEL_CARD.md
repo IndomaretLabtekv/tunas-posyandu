@@ -86,16 +86,21 @@ Seluruhnya pada target dan split identik, dan seluruhnya menghasilkan **skor kon
 Aturan biner `HAZ_t < −2` tetap dilaporkan sebagai pembanding pada metrik klasifikasi, tetapi tidak dipakai sebagai baseline ranking.
 
 ### Metrik
+
+Grouped child holdout, mean ± sample SD atas lima seed. Hasil temporal dan
+angka mentah per seed ada di [`FINAL_TABULAR_RESULTS.md`](FINAL_TABULAR_RESULTS.md)
+dan `results/tabular/final/`.
+
 | Metrik | B0 | B1 | B2 | M1 | M2 | M3 |
 |---|---|---|---|---|---|---|
-| AUPRC | | | | | | |
-| Recall (kelas risiko) | | | | | | |
-| Precision | | | | | | |
-| F1 | | | | | | |
-| Recall@10% | | | | | | |
-| Precision@10% | | | | | | |
-| Recall@20% | | | | | | |
-| Brier score | | | | | | |
+| AUPRC | .1626±.0464 | .1797±.0436 | .1622±.0403 | .2291±.0546 | **.2735±.0947** | .2268±.0556 |
+| Recall (Top-20%) | .2096±.1002 | .2989±.0967 | .2741±.0364 | .4124±.0655 | **.4821±.0994** | .4590±.0820 |
+| Precision (Top-20%) | .1042±.0466 | .1500±.0401 | .1417±.0309 | .2125±.0475 | **.2500±.0691** | .2375±.0600 |
+| F1 (Top-20%) | .1384±.0625 | .1986±.0545 | .1859±.0339 | .2790±.0530 | **.3277±.0818** | .3115±.0694 |
+| Recall@10% | .1143±.0496 | .1363±.0391 | .1623±.0335 | .2392±.0728 | .2587±.1034 | **.2667±.0223** |
+| Precision@10% | .1167±.0543 | .1417±.0475 | .1667±.0417 | .2417±.0618 | **.2750±.1337** | **.2750±.0475** |
+| Recall@20% | .2096±.1002 | .2989±.0967 | .2741±.0364 | .4124±.0655 | **.4821±.0994** | .4590±.0820 |
+| Raw Brier | — | — | .2041±.0127 | .0948±.0109 | .0942±.0099 | **.0939±.0107** |
 | Latency (ms) | | | | | | |
 
 Metrik @K adalah yang paling dekat dengan kondisi nyata: kapasitas tindak lanjut petugas terbatas, sehingga yang penting adalah berapa kasus tertangkap dalam K prioritas teratas.

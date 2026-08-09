@@ -70,6 +70,26 @@ Direncanakan lebih dulu agar tidak terjadi pemilihan hasil setelah melihat angka
 
 ## Log
 
-> Kosong. Entri pertama diisi saat CV-00 benar-benar dijalankan.
->
-> Jangan menyalin contoh berisi angka. Angka placeholder di dokumen ini adalah cara paling mudah membuat paper berisi hasil yang tidak pernah terjadi.
+### CV-09 — Validasi resmi WHO length-for-age
+- Tanggal / PIC: 9 Agustus 2026 / Codex, untuk diverifikasi tim
+- Commit / config / seed: parent HEAD `30fa13b`; working tree memuat perubahan task ini; tidak memakai seed
+- Dataset & versi: WHO `lenanthro.sas7bdat`, 1.462 baris recumbent usia 0–730 hari
+- Split: tidak berlaku
+- Pertanyaan yang dijawab: apakah implementasi HAZ cocok dengan rujukan resmi independen?
+- Setup: LMS dari paket SAS resmi WHO; 18 kasus dari simplified field tables WHO yang terpisah
+- Hasil: 18/18 kasus lulus; selisih absolut maksimum 0,0256 HAZ pada toleransi 0,05
+- Interpretasi & batasannya: toleransi mencakup pembulatan panjang 0,1 cm pada tabel lapangan; provenance dan checksum ada di `data/who/provenance.json`
+- Masuk paper di: §3.3 / bukti CV-09
+
+### TAB-FINAL-01 — Final multi-seed tabular evaluation
+- Tanggal / PIC: 9 Agustus 2026 / Codex, untuk diverifikasi tim
+- Commit / config / seed: parent HEAD `30fa13b`; working tree memuat perubahan task ini; `configs/exp_tabular_final.json`; seed 42, 314, 1618, 2026, 2718
+- Dataset & versi: `posyandu_synth_v1`; 1.200 anak per seed; 22.779–22.983 kunjungan per seed
+- Split: grouped child holdout + temporal holdout dengan label-maturity purge; satu index visit per anak
+- Pertanyaan yang dijawab: TAB-01–07, TAB-09, TAB-11; kontribusi trajectory M2 terhadap M1
+- Setup: B0/B1/B2/M1/M2/M3, exact-K 5/10/20%, M2 dipra-spesifikasikan sebagai primary
+- Hasil grouped: M2 AUPRC 0,2735 ± 0,0947; Recall@20% 0,4821 ± 0,0994; M2−M1 +0,0444 ± 0,0716 AUPRC dan +0,0697 ± 0,0774 Recall@20%
+- Hasil temporal: M2 AUPRC 0,2976 ± 0,0311; Recall@20% 0,4358 ± 0,0345; M2−M1 +0,0739 ± 0,0281 AUPRC dan +0,0821 ± 0,0680 Recall@20%
+- Interpretasi & batasannya: trajectory memberi sinyal tambahan rata-rata pada kedua protokol dalam simulasi terkontrol, dengan variasi antarseed; bukan validasi klinis atau bukti dampak kesehatan nyata
+- Artefak: `results/tabular/final/`; ringkasan `docs/FINAL_TABULAR_RESULTS.md`
+- Masuk paper di: §4.2–§4.4 / TAB-01–07, TAB-09, TAB-11

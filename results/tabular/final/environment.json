@@ -1,0 +1,14 @@
+{
+  "python": "3.12.3",
+  "git_commit": "30fa13b9bd3bb355c0d641bea00381115add536d",
+  "git_dirty": true,
+  "packages": {
+    "numpy": "2.4.6",
+    "pandas": "3.0.5",
+    "scikit-learn": "1.9.0",
+    "lightgbm": "4.7.0",
+    "shap": "0.52.0",
+    "joblib": "1.5.3"
+  },
+  "config": "configs/exp_tabular_final.json"
+}

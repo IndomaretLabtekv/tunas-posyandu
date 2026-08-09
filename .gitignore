@@ -2,6 +2,8 @@
 __pycache__/
 node_modules/
 artifacts/
+data/synth/final/
+results/tabular/final/runs/
 *.pyc
 .env
 *.tmp

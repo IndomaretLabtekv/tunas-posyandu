@@ -1,0 +1,44 @@
+{
+  "source_organization": "World Health Organization",
+  "retrieved_at": "2026-08-09",
+  "scope": "Length-for-age, recumbent, sexes M/F, ages 0-730 days",
+  "normalized_artifact": {
+    "path": "data/who/lhfa_lms.csv",
+    "sha256": "84978a2a1798a67f37d416969515e228ec54910328b6c9933c7ae7135f13aa45",
+    "rows": 1462
+  },
+  "transformation": [
+    "Extract lenanthro.sas7bdat from the official igrowup-sas.zip archive.",
+    "Decode WHO sex codes 1=male and 2=female as M and F.",
+    "Retain loh=L (recumbent length), ages 0 through 730 days, and LMS columns.",
+    "Sort by sex and age_days and write the canonical sex,age_days,L,M,S CSV schema."
+  ],
+  "sources": [
+    {
+      "role": "lms_parameters",
+      "name": "WHO Child Growth Standards SAS macro package (igrowup-sas.zip), lenanthro.sas7bdat",
+      "local_path": "data/who/raw/lenanthro.sas7bdat",
+      "url": "https://cdn.who.int/media/docs/default-source/child-growth/child-growth-standards/software/igrowup-sas.zip?sfvrsn=20022035_2",
+      "archive_sha256": "f5f7d6cd59bc54b7e216e673f3a373153ceaca127a2230004abbf2b8beef7200",
+      "extracted_file_sha256": "de83b6535888941a42dd55b82dc7a07889427d775900a1a969b1d322df34874c"
+    },
+    {
+      "role": "independent_reference_cases",
+      "name": "Simplified field tables: Length-for-age BOYS, birth to 2 years (z-scores)",
+      "url": "https://cdn.who.int/media/docs/default-source/child-growth/child-growth-standards/indicators/length-height-for-age/sft_lhfa_boys_z_0_2.pdf?sfvrsn=ebd98e93_9",
+      "sha256": "4c226b16de5689a9318a3029d8b524072f39c4ec9d94813814e74f3387f4f651"
+    },
+    {
+      "role": "independent_reference_cases",
+      "name": "Simplified field tables: Length-for-age GIRLS, birth to 2 years (z-scores)",
+      "url": "https://cdn.who.int/media/docs/default-source/child-growth/child-growth-standards/indicators/length-height-for-age/sft_lhfa_girls_z_0_2.pdf?sfvrsn=6b77f3cd_9",
+      "sha256": "e958276ab41b783e9a425cad07ad033890e7557935b33b7fb7a56e69bdfc3733"
+    }
+  ],
+  "reference_cases": {
+    "path": "tests/who_reference_cases.csv",
+    "selection": "Both sexes; birth through 24 months; median, negative, positive, and HAZ=-2 threshold rows from the separate rounded WHO field tables.",
+    "tolerance": "0.05 HAZ, allowing for source lengths rounded to 0.1 cm and nominal month-to-day conversion."
+  },
+  "rebuild_command": "python -m scripts.prepare_who_tables --sas data/who/raw/lenanthro.sas7bdat --out data/who/lhfa_lms.csv"
+}

@@ -353,3 +353,85 @@ def test_b1_menolak_training_tanpa_nilai_valid():
     X = pd.DataFrame({"haz_t": [np.nan, np.nan], "haz_slope_per_month": [np.nan, np.nan]})
     with pytest.raises(ValueError, match="minimal satu nilai valid"):
         fit_b1(X, X, np.array([0.0, 1.0]))
+
+
+# ---------------------------------------------------------------- final evidence
+
+def test_kasus_error_representatif_dipilih_dengan_aturan_deterministik():
+    from tabular.train import representative_error_cases
+
+    n = 10
+    X = pd.DataFrame({
+        "child_id": [f"C{i:02d}" for i in range(n)],
+        "prediction_date": pd.date_range("2025-01-01", periods=n),
+        "haz_t": np.linspace(-3, 0, n),
+        "age_days": np.linspace(30, 700, n),
+        "n_prior_visits": [0, 1, 2, 3, 4, 5, 6, 2, 7, 8],
+        "haz_slope_per_month": np.linspace(-0.1, 0.1, n),
+        "haz_delta_1visit": np.zeros(n),
+        "haz_delta_3months": np.zeros(n),
+        "n_consecutive_declines": np.arange(n),
+        "ever_stunted_to_date": np.zeros(n),
+        "visit_gap_days_t": np.full(n, 30.0),
+        "haz_missing_t": np.zeros(n),
+    })
+    y = np.array([0, 1, 0, 1, 0, 0, 0, 1, 0, 0])
+    primary = np.linspace(1.0, 0.1, n)
+    snapshot = primary[::-1]
+
+    a = representative_error_cases(y, primary, snapshot, X, k_frac=0.3)
+    b = representative_error_cases(y, primary, snapshot, X, k_frac=0.3)
+
+    required = {
+        "high_priority_false_positive", "missed_positive", "capacity_boundary",
+        "trajectory_rank_change", "short_or_sparse_history",
+    }
+    assert required <= set(a["case_type"])
+    pd.testing.assert_frame_equal(a, b)
+
+
+def test_model_persisten_sama_setelah_dimuat_di_proses_baru(tmp_path):
+    import subprocess
+    import sys
+    from datetime import datetime, timezone
+
+    from sklearn.linear_model import LogisticRegression
+
+    from tabular.persist import save_artifact
+
+    X = pd.DataFrame({"a": [-2.0, -1.0, 1.0, 2.0], "b": [0.0, 1.0, 0.0, 1.0]})
+    y = np.array([0, 0, 1, 1])
+    model = LogisticRegression(random_state=0).fit(X, y)
+    model_path = tmp_path / "model.joblib"
+    fixture = tmp_path / "fixture.csv"
+    output = tmp_path / "predictions.csv"
+    metadata = {
+        "model_name": "fixture", "model_version": "1",
+        "training_config": {}, "seeds": {"model": 0}, "target": {"name": "fixture"},
+        "created_utc": datetime.now(timezone.utc).isoformat(), "git_commit": "test",
+    }
+    save_artifact(model_path, model, list(X.columns), metadata)
+    X.to_csv(fixture, index=False)
+
+    subprocess.run([
+        sys.executable, "-m", "tabular.persist", "--model", str(model_path),
+        "--input", str(fixture), "--output", str(output),
+    ], check=True)
+
+    fresh = pd.read_csv(output)["prediction"].to_numpy()
+    assert np.allclose(model.predict_proba(X)[:, 1], fresh, rtol=0, atol=1e-12)
+
+
+def test_agregasi_menerima_metrik_numerik_berdtype_object():
+    """compare_models menghasilkan kolom object; metrik tetap harus diagregasi."""
+    from tabular.final_experiment import _aggregate
+
+    raw = pd.DataFrame({
+        "generator_seed": [1, 2, 3], "random_seed": [1, 2, 3],
+        "evaluation": ["grouped"] * 3, "model": ["M2_plus_trajectory"] * 3,
+        "auprc": pd.Series(["0.1", "0.2", "0.3"], dtype=object),
+        "score_type": ["probability"] * 3,
+    })
+    got = _aggregate(raw)
+
+    assert got.loc[got["metric"] == "auprc", "mean"].iloc[0] == pytest.approx(0.2)

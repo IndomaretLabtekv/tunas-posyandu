@@ -1,0 +1,5 @@
+group,n,age_days,sex_is_male,haz_t,weight_kg_t,length_cm_t,haz_missing_t,measured_by_cv_t,n_prior_visits,days_since_first_visit,visit_gap_days_t,visit_gap_mean,haz_slope_per_month,haz_delta_1visit,haz_delta_3months,haz_min_to_date,haz_max_to_date,haz_range_to_date,haz_std_to_date,n_consecutive_declines,ever_stunted_to_date,months_since_haz_peak,length_velocity_cm_per_month
+true_positive,9,644.333,0.889,-1.533,11.349,80.644,0.0,0.667,15.222,582.667,40.222,39.555,-0.047,0.281,0.1,-2.054,-0.39,1.664,0.494,0.444,0.556,15.292,1.652
+false_negative,17,640.824,0.529,-1.095,11.623,81.212,0.0,0.588,16.059,595.412,47.882,37.845,-0.024,0.095,0.283,-1.709,-0.292,1.417,0.397,0.294,0.353,15.414,1.246
+false_positive,39,643.0,0.692,-1.529,11.597,80.305,0.0,0.667,16.103,589.256,34.128,37.532,-0.023,0.305,0.076,-2.133,-0.672,1.461,0.431,0.128,0.615,12.053,1.677
+true_negative,175,637.331,0.486,-0.769,11.847,82.022,0.0,0.68,16.0,583.4,37.12,37.179,0.001,-0.079,-0.052,-1.396,-0.041,1.355,0.384,0.909,0.326,10.937,0.703

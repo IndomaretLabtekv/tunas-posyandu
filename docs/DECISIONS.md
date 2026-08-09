@@ -252,6 +252,23 @@ Keduanya tetap bukan pengganti validasi pada balita nyata. Jika `proxy_subjects_
 
 ---
 
+## DEC-016 — Mode ESTIMASI tanpa referensi skala (bukan pengukuran)
+
+**Konteks.** Foto tanpa alas berukuran diketahui tidak dapat diukur secara absolut (scale ambiguity: `S/d = s/f`). Pengguna tetap ingin "memindai" foto bayi apa pun dan melihat perkiraan ukuran.
+
+**Keputusan.**
+1. `cv/estimate.py` — mode estimasi dengan dua prior:
+   - **Prior kepala** (top-down): skala = `NEWBORN_HEAD_CM (11 cm) / diameter_kepala_px`; kepala diukur dari profil lebar KULIT di zona ujung siluet (scan dari ujung, berhenti pada konstriksi leher). Hanya dipakai bila rasio kepala:panjang masuk rentang fisiologis (0.15–0.32, gate STRICT — kepala non-fisiologis jenuh di ~0.32 dan selalu jatuh ke prior perspektif).
+   - **Prior perspektif** (oblique/samping): skala = `camera_height_cm (asumsi 60 cm) / focal_px (0.72 x lebar citra)`.
+2. Hasil SELALU `confidence 0.3`, band ±15% (head) / ±30% (perspektif), ditandai ESTIMASI di UI; **dilarang disajikan sebagai pengukuran** (RESPONSIBLE_AI.md).
+3. Demo & runner menampilkan estimasi hanya saat pengukuran mat ditolak karena "alas tidak terdeteksi".
+
+**Alasan.** Memenuhi kebutuhan eksplorasi "foto langsung ke-scan" tanpa mengorbankan integritas pengukuran: angka estimasi tidak pernah masuk klaim paper (tetap mat-based), dan label ketidakpastian selalu tampil.
+
+**Konsekuensi.** Validasi dunia nyata (main-baby, newborn, tanpa alas): estimasi 52.8 cm ±30% vs panjang newborn nyata ~50 cm — dalam rentang. Foto oblique membuat prior kepala tidak valid (leher tak terpisah jelas) → jatuh ke perspektif. Paper tidak memakai mode ini sebagai hasil.
+
+---
+
 ## DEC-0xx — (template)
 
 **Konteks.**

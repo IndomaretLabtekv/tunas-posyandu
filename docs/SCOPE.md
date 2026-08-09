@@ -45,9 +45,9 @@ Yang berubah adalah **cara mencapainya** (metode, form factor, cakupan versi per
 
 | # | Komponen | Catatan |
 |---|---|---|
-| V1 | Deteksi marker ArUco pada alas ukur | 4 marker, jarak fisik diketahui |
+| V1 | Deteksi 4 sudut alas polos berukuran diketahui | Tanpa marker (DEC-015); alas warna seragam, ukuran fisik diketahui |
 | V2 | Rektifikasi perspektif (homografi bidang alas) | Bukan "koreksi parallax umum" — lihat DEC-004 |
-| V3 | Quality control citra | Blur (varians Laplacian), keterbacaan 4 marker, kelengkapan tubuh dalam bingkai, **geometry QC** (reprojection error / kemiringan kamera) |
+| V3 | Quality control citra | Blur (varians Laplacian), kejelasan 4 sudut alas, kelengkapan tubuh dalam bingkai, **geometry QC** (reprojection error / kemiringan kamera) |
 | V4 | Ekstraksi endpoint tubuh pada bidang teregistrasi | Segmentasi subjek terhadap alas berwarna seragam; titik ekstrem sepanjang sumbu tubuh |
 | V5a | QC postur berbasis geometri siluet (rasio, kelengkungan sumbu, deviasi, confidence segmentasi) | **Wajib** — jalur utama, tidak bergantung model pose |
 | V5b | Pose estimation pretrained sebagai QC tambahan | **Bersyarat**: masuk produk hanya bila lolos CV-06 (DEC-006) |

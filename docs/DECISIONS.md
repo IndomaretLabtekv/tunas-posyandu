@@ -215,6 +215,40 @@ Keduanya tetap bukan pengganti validasi pada balita nyata. Jika `proxy_subjects_
 
 ---
 
+## DEC-014 — Segmentasi subjek: model (BiRefNet_dynamic) sebagai jalur utama, baseline warna tetap ada
+
+**Konteks.** DEC-006 menetapkan endpoint dari segmentasi (bukan keypoint pose) tanpa memutuskan metode segmentasinya; asumsi awalnya threshold warna pada alas seragam. Evaluasi lapangan yang lebih luas (pakaian, cahaya, posisi) membuat segmentasi berbasis model lebih andal.
+
+**Keputusan.**
+- **Jalur utama:** BiRefNet_dynamic (`ZhengPeng7/BiRefNet_dynamic`, resolusi dinamis 256–2304) via transformers, lazy-load, backend default di `cv/segment.py`.
+- **Baseline non-AI (wajib tetap ada):** ColorSegmenter — subjek = komponen terbesar "bukan alas" di dalam region alas. Dipakai sebagai fallback saat model tidak tersedia dan sebagai pembanding eksperimen CV-05/CV-07/CV-08.
+- **Posture QC:** ViTPose (`nielsr/vitpose_base`) sebagai model pose opsional gated CV-06, menggantikan "pose pretrained generik" pada DEC-006. Tetap hanya menurunkan confidence, tidak pernah menjadi sumber angka ukur.
+- Registry backend dibuat extensible (YOLO26n-seg / SAM 3 bisa ditambah; SAM 3 butuh Python 3.12 + GPU + akses checkpoint gated — Future Work).
+
+**Alasan.** Segmentasi adalah satu-satunya titik yang benar-benar butuh "pengertian visual"; bagian skala/geometri tetap deterministik. Mempertahankan baseline non-AI menjaga produk tetap jalan tanpa model dan memberi bahan perbandingan yang jujur.
+
+**Konsekuensi.** CLAIMS C-A5 (endpoint berbasis segmentasi) kini didukung jalur model + baseline. Video boleh menyebut "AI" pada segmentasi bila BiRefNet yang dipakai (VIDEO_SCRIPT.md catatan segmen C). Data evaluasi `proxy_subjects_v1` tetap syarat klaim segmentasi (DEC-013).
+
+---
+
+## DEC-015 — Referensi skala tanpa marker: alas polos berukuran diketahui
+
+**Konteks.** Marker ArUco di sudut alas adalah friction bagi kader (harus dicetak/ditempel dengan presisi) dan "penanda" yang ingin dihindari pengguna. Keputusan tim: MVP memakai alas polos warna seragam berukuran fisik diketahui (mis. 60×100 cm) sebagai referensi skala — pengguna cukup membaringkan anak dan menjepret.
+
+**Keputusan.**
+1. Deteksi referensi skala baru (`cv/mat_corners.py`): clustering warna (k-means) → kandidat segiempat cembung terbesar yang **tidak menyentuh tepi bingkai** → refinement sudut subpiksel → pengurutan konsisten (TL, TR, BR, BL) → homografi identik dengan mode marker. Kontrak keluaran sama (`DetectionResult`), sehingga seluruh modul hilir tidak berubah.
+2. `cv/pipeline.py` default ke `detect_mat_corners`; mode marker ArUco tetap tersedia via argumen `detector` sebagai comparator/fallback.
+3. Warna alas = spesifikasi produk (dicetak seragam), diteruskan ke ColorSegmenter via `mat_color`.
+4. Runner `cv/evaluate.py` (CV-00) tetap mode marker untuk sesi fisik yang sudah dirancang; runner mode alas polos menyusul.
+
+**Alasan.** Tanpa referensi skala di foto, pengukuran absolut tidak mungkin secara matematis (scale ambiguity: `S/d = s/f`); multi-frame VIO (ARCore/ARKit) bisa menghilangkan referensi fisik tetapi butuh gerakan kamera, perangkat terkalibrasi, dan SDK native — tidak cocok dengan alur "jepret sekali" dan scope web app (Future Work, lihat bawah). Alas polos adalah kompromi: friction minimal (cetak sekali, tanpa presisi penempatan marker) dengan matematika identik.
+
+**Trade-off yang diterima (dilaporkan jujur di paper).** Deteksi sudut polos kurang robust daripada fidusial ber-ID: rawan cahaya, alas kusut, warna lantai mirip, dan tidak ada ID untuk verifikasi korespondensi sudut. Dikompensasi: syarat cembung + margin bingkai, subpixel refinement, QC framing/tilt di hilir, dan penolakan (bukan angka salah) saat gagal. Detection rate ekspektasi lebih rendah dari ArUco — diukur di CV-01/CV-02.
+
+**Konsekuensi.** CLAIMS C-A1, SCOPE V1/V3, MODEL_CARD disinkronkan. Paper §3.3 menyebut "deteksi 4 sudut alas polos berukuran diketahui". Future Work: (a) multi-frame VIO tanpa referensi fisik — butuh gerakan kamera, daftar device terkalibrasi, dan app native/WebXR (iOS Safari tidak mendukung WebXR); (b) deteksi sudut berbasis deep learning jika robustness alas polos tidak mencukupi.
+
+---
+
 ## DEC-0xx — (template)
 
 **Konteks.**

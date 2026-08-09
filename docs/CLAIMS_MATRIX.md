@@ -17,7 +17,7 @@
 | ID | Klaim | Implemented | Evidence | Paper | Demo |
 |---|---|---|---|---|---|
 | C-A0 | Galat akibat offset bidang terukur & dikendalikan lewat protokol | ☐ | CV-00 | §3.3, §4.1 | — |
-| C-A1 | Deteksi 4 marker ArUco pada alas ukur | ☐ | CV-01 | §3.3 | |
+| C-A1 | Deteksi 4 sudut alas polos berukuran diketahui (tanpa marker, DEC-015) | ☐ | CV-01 | §3.3 | |
 | C-A2 | Rektifikasi perspektif bidang alas (homografi) | ☐ | CV-02 | §3.3 | |
 | C-A3 | Quality control: blur, keterbacaan marker, kelengkapan tubuh | ☐ | CV-03 | §3.3 | |
 | C-A4 | Geometry QC: penolakan citra dengan kemiringan kamera berlebih | ☐ | CV-04 | §3.3, §4.1 | |

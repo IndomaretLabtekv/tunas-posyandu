@@ -7,14 +7,14 @@ Dua komponen model dalam Tunas didokumentasikan terpisah karena sifat, evaluasi,
 ## Bagian 1 — Pipeline estimasi antropometri (kanal visual)
 
 ### Ringkasan
-Pipeline geometri, bukan model tunggal: deteksi marker ArUco → rektifikasi bidang alas → quality control → segmentasi subjek → ekstraksi endpoint sepanjang sumbu tubuh → konversi ke sentimeter → konversi ke HAZ (LMS WHO). QC postur berbasis geometri siluet merupakan jalur utama; model pose pretrained bersifat **auxiliary dan bersyarat** — hanya masuk produk bila lolos CV-06 (DEC-006). Pose tidak pernah menjadi sumber angka ukur.
+Pipeline geometri, bukan model tunggal: deteksi 4 sudut alas polos berukuran diketahui (tanpa marker, DEC-015) → rektifikasi bidang alas → quality control → segmentasi subjek → ekstraksi endpoint sepanjang sumbu tubuh → konversi ke sentimeter → konversi ke HAZ (LMS WHO). QC postur berbasis geometri siluet merupakan jalur utama; model pose pretrained bersifat **auxiliary dan bersyarat** — hanya masuk produk bila lolos CV-06 (DEC-006). Pose tidak pernah menjadi sumber angka ukur.
 
 ### Penggunaan yang dimaksudkan
 Membantu kader Posyandu memperoleh estimasi panjang badan telentang pada kondisi tangkap yang terkendali, sebagai pendamping (bukan pengganti) pengukuran manual.
 
 ### Penggunaan di luar cakupan
 - Pengukuran tinggi badan berdiri
-- Pengukuran tanpa alas ber-marker
+- Pengukuran tanpa alas polos berukuran diketahui
 - Pengukuran dari citra yang gagal quality control
 - Diagnosis status gizi tanpa penilaian tenaga kesehatan
 

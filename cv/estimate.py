@@ -89,7 +89,6 @@ def estimate_length_no_reference(
     #    berpakaian tidak mengganggu karena profil dihitung pada piksel
     #    KULIT saja.
     head_px = _head_diameter_px(image, seg.mask, span_px)
-    head_aspect = None
 
     # 3. Gerbang fisiologis + kebulatan: prior kepala hanya untuk kamera
     #    mendekati tegak lurus (kepala tampak bulat, rasio ~0.15-0.32).

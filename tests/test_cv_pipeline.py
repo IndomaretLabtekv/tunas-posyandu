@@ -81,7 +81,7 @@ def test_tubuh_terpotong_bingkai_ditolak():
     res = measure_length(img2, SPEC, segmenter=ColorSegmenter(), detector=detect_markers,
                          **_pipeline_kwargs(img2))
     assert not res.ok
-    assert any("terpotong" in r for r in res.qc_reasons)
+    assert any("dekat tepi" in r or "terpotong" in r for r in res.qc_reasons)
 
 
 def test_fallback_segmenter_otomatis_saat_primary_gagal():
@@ -117,3 +117,18 @@ def test_fallback_tidak_dipakai_saat_segmenter_sama():
     res = measure_length(img, SPEC, segmenter=ColorSegmenter(),
                          image_qc=ImageQC(min_blur_var=1.0))
     assert not res.ok
+
+
+def test_alas_tanpa_badan_ditolak():
+    """Mat kosong: bayangan/tekstur tepi bukan subjek sah (regresi round-4)."""
+    from _cv_synth import synth_plain_mat
+
+    img, _, box = synth_plain_mat()
+    x0, y0, x1, y1 = box
+    # Simulasikan "bayangan": strip sewarna-badan menempel tepi atas alas.
+    img2 = img.copy()
+    cv2.rectangle(img2, (x0 + 10, y0 - 4), (x1 - 10, y0 + 14), (30, 120, 200), -1)
+    res = measure_length(img2, SPEC, segmenter=ColorSegmenter(),
+                         image_qc=ImageQC(min_blur_var=1.0))
+    assert not res.ok, "bayangan tepi tidak boleh terukur sebagai badan"
+    assert any("dekat tepi" in r for r in res.qc_reasons)

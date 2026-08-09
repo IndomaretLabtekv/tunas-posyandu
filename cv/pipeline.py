@@ -34,6 +34,9 @@ from cv.segment import BaseSegmenter, ColorSegmenter, endpoints_from_mask, get_s
 LOW_CONFIDENCE = 0.4
 POSTURE_PENALTY_PER_REASON = 0.25
 POSTURE_PENALTY_CAP = 0.6
+# Margin subjek dari tepi alas (fraksi dimensi citra teregistrasi):
+# bayangan tepi alas tidak boleh terukur sebagai badan.
+SUBJECT_EDGE_MARGIN_FRAC = 0.04
 
 
 def _default_reference_detector(image, mat_spec):
@@ -112,11 +115,16 @@ def measure_length(
         return MeasurementResult(ok=False, model=seg.model, qc_reasons=[seg.reason],
                                  latency_s=time.perf_counter() - t0)
 
-    # QC framing tubuh (V3): subjek menyentuh tepi citra teregistrasi = terpotong.
-    if (seg.mask[:2, :].any() or seg.mask[-2:, :].any()
-            or seg.mask[:, :2].any() or seg.mask[:, -2:].any()):
+    # QC framing tubuh (V3): subjek harus di dalam alas dengan margin.
+    # Bayangan/tekstur tepi alas membentuk "subjek" palsu yang menempel
+    # tepi; badan bayi sesuai protokol berada di dalam dengan margin.
+    h_r, w_r = rect.shape[:2]
+    m = SUBJECT_EDGE_MARGIN_FRAC
+    ys, xs = np.nonzero(seg.mask)
+    if (xs.min() < m * w_r or xs.max() > (1 - m) * w_r
+            or ys.min() < m * h_r or ys.max() > (1 - m) * h_r):
         return MeasurementResult(ok=False, model=seg.model,
-                                 qc_reasons=["tubuh terpotong bingkai"],
+                                 qc_reasons=["subjek terlalu dekat tepi alas"],
                                  latency_s=time.perf_counter() - t0)
 
     end_rect = endpoints_from_mask(seg.mask)

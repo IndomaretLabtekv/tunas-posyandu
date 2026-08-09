@@ -71,6 +71,8 @@ def test_kepala_di_ujung_lain_tetap_terukur():
     flipped = img[:, ::-1].copy()
     r = estimate_length_no_reference(flipped)
     assert r.ok, r.reasons
+    assert r.method == "head_prior", "kepala di ujung MAX harus terdeteksi"
+    assert r.head_diameter_px == pytest.approx(head_px, rel=0.10)
     assert r.length_cm == pytest.approx(total_cm, rel=0.10)
 
 

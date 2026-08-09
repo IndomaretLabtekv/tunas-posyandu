@@ -10,10 +10,11 @@ visual untuk tiap foto, lalu menulis:
 - experiments/results/report.csv                  (tabel hasil lengkap)
 
 Konfigurasi per gambar: `experiments/manifest.csv` (opsional) dengan kolom
-image, mat_width_cm, mat_height_cm, mat_color_r/g/b. Gambar tanpa baris
-manifest memakai spesifikasi produk (60x100 cm, warna standar). Contoh
-baris untuk foto yoga mat biru (Wikimedia, standar 183x61 cm):
-    Gaim_Yoga_Mat_1_2019-05-15.jpg,mats,183,61,199,66,37
+image, mat_width_cm, mat_height_cm, mat_color_b/g/r (BGR, sama dengan
+konvensi cv/). Gambar tanpa baris manifest memakai spesifikasi produk
+(60x100 cm, warna standar). Contoh baris untuk foto yoga mat biru
+(Wikimedia, standar 183x61 cm):
+    Gaim_Yoga_Mat_1_2019-05-15.jpg,183,61,199,66,37
 
 Kolom report:
 - group       : subfolder sumber (mats / babies / ...)
@@ -50,7 +51,7 @@ from cv.segment import ColorSegmenter
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "experiments" / "src"
 OUT = ROOT / "experiments" / "results"
-EXT = {".jpg", ".jpeg", ".png"}
+EXT = {".jpg", ".jpeg", ".png", ".avif"}   # .avif dikonversi via ffmpeg
 MANIFEST = ROOT / "experiments" / "manifest.csv"
 
 
@@ -65,9 +66,9 @@ def _load_manifest() -> dict[str, dict]:
             spec = MatSpec(width_cm=float(row["mat_width_cm"]),
                            height_cm=float(row["mat_height_cm"]))
             color = None
-            if row.get("mat_color_r", "").strip():
-                color = (int(row["mat_color_r"]), int(row["mat_color_g"]),
-                         int(row["mat_color_b"]))
+            if row.get("mat_color_b", "").strip():
+                color = (int(row["mat_color_b"]), int(row["mat_color_g"]),
+                         int(row["mat_color_r"]))
             out[img] = {"spec": spec, "mat_color": color}
     return out
 
@@ -99,8 +100,17 @@ def main() -> None:
     overlay_dir.mkdir(parents=True, exist_ok=True)
 
     rows = []
+    baby_counter = 0
     for path in images:
         img = cv2.imread(str(path))
+        if img is None and path.suffix.lower() == ".avif":
+            import subprocess
+            tmp = OUT / "overlay" / "_tmp_avif.png"
+            tmp.parent.mkdir(parents=True, exist_ok=True)
+            subprocess.run(["ffmpeg", "-y", "-i", str(path), str(tmp)],
+                           check=True, capture_output=True)
+            img = cv2.imread(str(tmp))
+            tmp.unlink(missing_ok=True)
         if img is None:
             print(f"[skip] tidak terbaca: {path}")
             continue
@@ -121,13 +131,13 @@ def main() -> None:
         )
         latency_ms = round((time.perf_counter() - t0) * 1000, 1)
 
-        # Dimensi quad terdeteksi (bukti geometri; mis. yoga mat 183x61).
-        det_w = det_h = ""
+        # Rasio sisi quad di RUANG PIKsel (independen dari spec -- bukan
+        # tautologi homografi). Yoga mat asli ~3.0.
+        det_px_ratio = ""
         if det_prod.ok:
-            from cv.aruco import apply_homography
-            pts = apply_homography(det_prod.homography, det_prod.image_points)
-            det_w = round(float(np.linalg.norm(pts[1] - pts[0])), 1)
-            det_h = round(float(np.linalg.norm(pts[2] - pts[1])), 1)
+            p = det_prod.image_points
+            sides = sorted(np.linalg.norm(p[(i + 1) % 4] - p[i]) for i in range(4))
+            det_px_ratio = round(sides[2] / max(1.0, sides[0]), 2)
 
         estimate = None
         if not res.ok and "alas tidak terdeteksi" in "; ".join(res.qc_reasons):
@@ -149,13 +159,15 @@ def main() -> None:
         group_dir.mkdir(parents=True, exist_ok=True)
         cv2.imwrite(str(group_dir / f"{path.stem}.png"), overlay)
 
+        if path.parent.name == "babies":
+            baby_counter += 1
         rows.append({
             "group": path.parent.name,
-            "image": path.name,
+            "image": (f"baby-{baby_counter:02d}"
+                      if path.parent.name == "babies" else path.name),
             "det_nocolor": det_plain.ok,
             "det_color": det_prod.ok,
-            "det_w_cm": det_w,
-            "det_h_cm": det_h,
+            "det_px_ratio": det_px_ratio,
             "reason": "; ".join(res.qc_reasons) if not res.ok else "",
             "length_cm": res.length_cm if res.ok else "",
             "confidence": res.confidence if res.ok else "",

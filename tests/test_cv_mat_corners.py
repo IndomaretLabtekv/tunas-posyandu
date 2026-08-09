@@ -169,3 +169,46 @@ def test_distractor_sewarna_jauh_tidak_ikut_tergabung():
     assert det.ok, det.reason
     expected = np.array([[x0, y0], [x1, y0], [x1, y1], [x0, y1]], dtype=np.float64)
     assert np.allclose(det.image_points, expected, atol=3.0)
+
+
+def test_distractor_sewarna_jauh_dengan_frame_besar():
+    # Frame besar: distractor sewarna di tempat yang BENAR-BENAR terpisah
+    # (> kernel close & > pad bbox) -- tidak ikut tergabung (regresi r4).
+    img = np.full((1200, 1200, 3), 230, np.uint8)
+    img[100:1100, 250:850] = STANDARD_MAT_COLOR     # 600x1000 px = 60:100
+    img[950:1000, 1050:1150] = STANDARD_MAT_COLOR   # distractor jauh
+    det = detect_mat_corners(img, SPEC, mat_color=STANDARD_MAT_COLOR)
+    assert det.ok, det.reason
+    expected = np.array([[250, 100], [850, 100], [850, 1100], [250, 1100]],
+                        dtype=np.float64)
+    assert np.allclose(det.image_points, expected, atol=3.0)
+
+
+def test_alas_terbelah_bayangan_tetap_tergabung():
+    # Alas terbelah jadi 2 komponen oleh strip bayangan (kroma beda):
+    # penggabungan spasial harus menyatukannya -> terdeteksi (regresi r4).
+    img = np.full((440, 520, 3), 230, np.uint8)
+    img[20:420, 60:300] = STANDARD_MAT_COLOR
+    img[20:420, 175:185] = (90, 90, 90)              # strip bayangan 10px
+    det = detect_mat_corners(img, SPEC, mat_color=STANDARD_MAT_COLOR)
+    assert det.ok, det.reason
+    expected = np.array([[60, 20], [300, 20], [300, 420], [60, 420]],
+                        dtype=np.float64)
+    assert np.allclose(det.image_points, expected, atol=3.0)
+
+
+def test_plausible_mat_ring_chroma_langsung():
+    # Unit test langsung _plausible_mat: quad bersih lolos; ring berpola
+    # ekstrem ditolak oleh cek kroma ring.
+    from cv.mat_corners import _plausible_mat
+
+    img = np.full((440, 520, 3), 230, np.uint8)
+    img[20:420, 60:300] = STANDARD_MAT_COLOR
+    quad = np.array([[60, 20], [300, 20], [300, 420], [60, 420]], np.float64)
+    assert _plausible_mat(img, quad, mat_color=STANDARD_MAT_COLOR)
+    # Checker kontras tinggi menutupi ring: std luminansi ring > ambang.
+    for y in range(21, 29):
+        for x in range(61, 299, 16):
+            img[y, x:x + 8] = (0, 0, 0)
+            img[y, x + 8:x + 16] = (255, 255, 255)
+    assert not _plausible_mat(img, quad, mat_color=STANDARD_MAT_COLOR)

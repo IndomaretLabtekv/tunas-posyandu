@@ -25,15 +25,20 @@ import numpy as np
 
 from cv.aruco import MatSpec, apply_homography, rectify
 from cv.geometry import measure_length_cm
-from cv.mat_corners import detect_mat_corners
+from cv.mat_corners import PRODUCT_MAT_COLOR, detect_mat_corners
 from cv.posture import SilhouettePostureQC, ViTPosePostureQC
 from cv.quality import ImageQC
-from cv.segment import BaseSegmenter, endpoints_from_mask, get_segmenter
+from cv.segment import BaseSegmenter, ColorSegmenter, endpoints_from_mask, get_segmenter
 
 # Ambang operasional -- lihat header modul.
 LOW_CONFIDENCE = 0.4
 POSTURE_PENALTY_PER_REASON = 0.25
 POSTURE_PENALTY_CAP = 0.6
+
+
+def _default_reference_detector(image, mat_spec):
+    """Referensi skala default: alas polos + verifikasi warna standar produk."""
+    return detect_mat_corners(image, mat_spec, mat_color=PRODUCT_MAT_COLOR)
 
 
 @dataclass
@@ -62,21 +67,24 @@ def measure_length(
     age_days: int | None = None,
     haz_fn=None,
     px_per_cm: float = 10.0,
-    detector=detect_mat_corners,
+    detector=_default_reference_detector,
     fallback_segmenter: BaseSegmenter | None = None,
 ) -> MeasurementResult:
     """Ukur panjang badan dari satu citra. Gagal = ok=False (fallback manual).
 
     `detector` adalah callable (image, mat_spec) -> DetectionResult;
-    default `cv.mat_corners.detect_mat_corners` (alas polos, DEC-015).
-    Mode marker ArUco: lewatkan `detector=cv.aruco.detect_markers`.
-    `fallback_segmenter`: dipakai bila segmenter utama gagal (mis. model
-    berat tidak tersedia) -- fallback otomatis ke baseline warna (DEC-014).
+    default deteksi alas polos dengan verifikasi warna standar produk
+    (DEC-015). Mode marker ArUco: `detector=cv.aruco.detect_markers`.
+    `fallback_segmenter`: dipakai otomatis bila segmenter utama gagal;
+    default = baseline warna dengan warna alas produk (DEC-014). Lewatkan
+    fallback_segmenter lain untuk menimpa; None melarang fallback.
     """
     t0 = time.perf_counter()
     segmenter = segmenter or get_segmenter("birefnet")
     image_qc = image_qc or ImageQC()
     posture_qc = posture_qc or SilhouettePostureQC()
+    if fallback_segmenter is None:
+        fallback_segmenter = ColorSegmenter(mat_color=PRODUCT_MAT_COLOR)
     reasons: list[str] = []
 
     det = detector(image, mat_spec)
@@ -93,7 +101,8 @@ def measure_length(
 
     rect = rectify(image, det, mat_spec, px_per_cm=px_per_cm)
     seg = segmenter.segment(rect)
-    if not seg.ok and fallback_segmenter is not None:
+    if not seg.ok and fallback_segmenter is not None \
+            and fallback_segmenter.model_name != segmenter.model_name:
         fb = fallback_segmenter.segment(rect)
         if fb.ok:
             seg = fb

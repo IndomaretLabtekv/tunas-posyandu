@@ -6,7 +6,7 @@ import pytest
 
 from cv.segment import ColorSegmenter, endpoints_from_mask, get_segmenter
 
-from _cv_synth import synth_mat_with_body
+from _cv_synth import synth_mat, synth_mat_with_body
 
 
 def test_color_segmenter_menemukan_badan_elips():
@@ -40,16 +40,17 @@ def test_segmenter_registry():
 
 
 def test_badan_kecil_off_center_tetap_terpilih():
-    # Badan kecil di pojok alas: komponen terbesar tetap badan, bukan marker.
-    img, ppc, box, _ = synth_mat_with_body(body_axes_cm=(20.0, 8.0))
+    # Hanya satu badan kecil di pojok kiri-bawah alas (tanpa badan di tengah):
+    # komponen terbesar harus badan itu, bukan marker (DEC-014 baseline).
+    img, ppc, box = synth_mat()  # alas marker, tanpa badan
     x0, y0, x1, y1 = box
-    # Marker tetap di sudut; badan elips kecil di pojok kiri-bawah.
     img2 = img.copy()
-    cv2.ellipse(img2, (x0 + int(12 * ppc), y1 - int(10 * ppc)),
-                (int(10 * ppc), int(4 * ppc)), 0, 0, 360, (30, 120, 200), -1)
+    cv2.ellipse(img2, (x0 + int(16 * ppc), y1 - int(12 * ppc)),
+                (int(15 * ppc), int(6 * ppc)), 0, 0, 360, (30, 120, 200), -1)
     res = ColorSegmenter().segment(img2)
     assert res.ok
-    # Komponen terbesar harus badan (bukan marker): mask lebih dekat ke badan.
     ys, xs = np.nonzero(res.mask)
-    cy = (ys.min() + ys.max()) / 2
-    assert cy > (y0 + y1) / 2  # berada di bawah tengah alas, dekat badan kecil
+    cx_m, cy_m = (xs.min() + xs.max()) / 2, (ys.min() + ys.max()) / 2
+    # Centroid mask harus di kuadran kiri-bawah alas (tempat badan kecil).
+    assert cx_m < (x0 + x1) / 2 - 5 * ppc
+    assert cy_m > (y0 + y1) / 2 + 5 * ppc

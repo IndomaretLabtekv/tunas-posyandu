@@ -45,7 +45,9 @@ def synth_mat_with_body(body_color=(30, 120, 200), body_axes_cm=(45.0, 12.0),
 
 # --- Alas polos tanpa marker (Opsi 1 / DEC-015) -----------------------------
 
-STANDARD_MAT_COLOR = (200, 120, 40)   # BGR -- spesifikasi alas standar produk
+# Satu sumber kebenaran: warna alas standar produk didefinisikan di modul CV.
+from cv.mat_corners import PRODUCT_MAT_COLOR as STANDARD_MAT_COLOR  # noqa: E402
+
 FLOOR_COLOR = (230, 230, 230)
 
 

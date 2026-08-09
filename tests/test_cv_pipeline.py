@@ -84,8 +84,10 @@ def test_tubuh_terpotong_bingkai_ditolak():
     assert any("terpotong" in r for r in res.qc_reasons)
 
 
-def test_fallback_segmenter_dipakai_saat_primary_gagal():
+def test_fallback_segmenter_otomatis_saat_primary_gagal():
     from cv.segment import BaseSegmenter, SegmentResult
+
+    from _cv_synth import synth_plain_mat_with_body
 
     class Gagal(BaseSegmenter):
         model_name = "gagal-sengaja"
@@ -95,10 +97,23 @@ def test_fallback_segmenter_dipakai_saat_primary_gagal():
                                  model=self.model_name, latency_s=0.0,
                                  ok=False, reason="model tidak tersedia: x")
 
-    img, _, _, body_cm = synth_mat_with_body()
-    res = measure_length(img, SPEC, segmenter=Gagal(), detector=detect_markers,
-                         fallback_segmenter=ColorSegmenter(), **_pipeline_kwargs(img))
+    # Tanpa fallback eksplisit: pipeline harus otomatis memakai baseline
+    # warna (DEC-014) -- citra alas polos sintetis.
+    img, _, _, body_cm = synth_plain_mat_with_body()
+    res = measure_length(img, SPEC, segmenter=Gagal(),
+                         image_qc=ImageQC(min_blur_var=1.0))
     assert res.ok, res.qc_reasons
     assert res.model == "color"
     assert res.length_cm == pytest.approx(body_cm, abs=1.5)
     assert any("fallback" in r for r in res.qc_reasons)
+
+
+def test_fallback_tidak_dipakai_saat_segmenter_sama():
+    from _cv_synth import synth_plain_mat_with_body
+
+    # Primary = baseline warna dan gagal -> tidak boleh fallback ke dirinya
+    # sendiri (fallback dimatikan bila backend sama).
+    img = np.full((400, 500, 3), 200, np.uint8)  # tanpa alas & tanpa badan
+    res = measure_length(img, SPEC, segmenter=ColorSegmenter(),
+                         image_qc=ImageQC(min_blur_var=1.0))
+    assert not res.ok

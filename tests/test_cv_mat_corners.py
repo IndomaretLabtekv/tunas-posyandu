@@ -108,3 +108,23 @@ def test_deteksi_deterministik_antar_panggilan():
     b = detect_mat_corners(img, SPEC)
     assert a.ok and b.ok
     assert np.allclose(a.image_points, b.image_points, atol=1e-6)
+
+
+def test_segiempat_seragam_warna_salah_ditolak():
+    # Fail-closed dengan signature warna produk (DEC-015): segiempat
+    # seragam beraspek 60:100 tapi bukan warna alas -> ditolak.
+    from cv.mat_corners import PRODUCT_MAT_COLOR
+
+    img = np.full((440, 520, 3), 230, np.uint8)
+    img[20:420, 60:300] = (60, 140, 60)  # hijau seragam, 400x240 px = rasio 1.67
+    assert not detect_mat_corners(img, SPEC, mat_color=PRODUCT_MAT_COLOR).ok
+    # Tanpa signature warna: kandidat seragam lolos (batas protokol, DEC-015).
+    assert detect_mat_corners(img, SPEC).ok
+
+
+def test_pola_di_tepi_alas_ditolak():
+    # Alas seragam tapi tepi dalamnya berpola -> ring tidak seragam -> ditolak.
+    img = np.full((440, 520, 3), 230, np.uint8)
+    img[40:400, 80:460] = (200, 120, 40)          # "alas"
+    img[52:388, 92:448] = (90, 90, 90)            # bingkai gelap di tepi dalam
+    assert not detect_mat_corners(img, SPEC).ok

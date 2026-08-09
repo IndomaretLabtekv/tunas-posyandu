@@ -109,14 +109,42 @@ def test_fallback_segmenter_otomatis_saat_primary_gagal():
 
 
 def test_fallback_tidak_dipakai_saat_segmenter_sama():
+    from cv.segment import SegmentResult
+
     from _cv_synth import synth_plain_mat_with_body
 
-    # Primary = baseline warna dan gagal -> tidak boleh fallback ke dirinya
-    # sendiri (fallback dimatikan bila backend sama).
-    img = np.full((400, 500, 3), 200, np.uint8)  # tanpa alas & tanpa badan
-    res = measure_length(img, SPEC, segmenter=ColorSegmenter(),
+    # Primary = ColorSegmenter (backend "color") yang gagal: fallback default
+    # juga "color" -> guard backend-sama melarang fallback -> tetap gagal.
+    class GagalWarna(ColorSegmenter):
+        def segment(self, image_bgr):
+            return SegmentResult(mask=np.zeros(image_bgr.shape[:2], bool),
+                                 model=self.model_name, latency_s=0.0,
+                                 ok=False, reason="warna alas tidak ditemukan")
+
+    img, _, _, _ = synth_plain_mat_with_body()
+    res = measure_length(img, SPEC, segmenter=GagalWarna(mat_color=(1, 1, 1)),
                          image_qc=ImageQC(min_blur_var=1.0))
     assert not res.ok
+    assert any("warna alas" in r for r in res.qc_reasons)
+
+
+def test_mask_kosong_ok_true_tidak_crash():
+    # Segmenter kustom ok=True dengan mask kosong -> penolakan terkontrol,
+    # bukan crash di .min() (regresi reviewer round-6).
+    from cv.segment import SegmentResult
+
+    from _cv_synth import synth_plain_mat_with_body
+
+    class KosongTapiOk(ColorSegmenter):
+        def segment(self, image_bgr):
+            return SegmentResult(mask=np.zeros(image_bgr.shape[:2], bool),
+                                 model=self.model_name, latency_s=0.0, ok=True)
+
+    img, _, _, _ = synth_plain_mat_with_body()
+    res = measure_length(img, SPEC, segmenter=KosongTapiOk(),
+                         fallback_segmenter=KosongTapiOk(),
+                         image_qc=ImageQC(min_blur_var=1.0))
+    assert not res.ok and res.qc_reasons
 
 
 def test_alas_tanpa_badan_ditolak():

@@ -117,6 +117,12 @@ def measure_length(
     if not seg.ok:
         return MeasurementResult(ok=False, model=seg.model, qc_reasons=[seg.reason],
                                  latency_s=time.perf_counter() - t0)
+    if not seg.mask.any():
+        # Segmenter kustom bisa saja mengembalikan ok=True dengan mask kosong;
+        # jangan sampai .min() di bawah crash.
+        return MeasurementResult(ok=False, model=seg.model,
+                                 qc_reasons=["mask segmentasi kosong"],
+                                 latency_s=time.perf_counter() - t0)
 
     # QC framing tubuh (V3): subjek harus di dalam alas dengan margin.
     # Bayangan/tekstur tepi alas membentuk "subjek" palsu yang menempel

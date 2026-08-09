@@ -62,3 +62,30 @@ def test_tanpa_foreground_gagal():
     img = np.full((200, 300, 3), BLANKET, np.uint8)  # selimut saja
     r = estimate_length_no_reference(img)
     assert not r.ok and r.reasons
+
+
+def test_kepala_di_ujung_lain_tetap_terukur():
+    # Mirror sintetis: kepala di sisi kanan (ujung proyeksi MAX). Scan arah
+    # terbalik harus tetap menemukan kepala (regresi reviewer round-3).
+    img, total_cm, head_px = synth_baby()
+    flipped = img[:, ::-1].copy()
+    r = estimate_length_no_reference(flipped)
+    assert r.ok, r.reasons
+    assert r.length_cm == pytest.approx(total_cm, rel=0.10)
+
+
+def test_rasio_tepat_di_batas_atas_jatuh_ke_perspektif():
+    # Rasio kepala:panjang ~0.32 (batas MAX) -> gate STRICT menolak.
+    # Kepala 21 cm -> 21/(21+4+40) = 0.323 > 0.32.
+    img, total_cm, _ = synth_baby(head_cm=21.0, body_cm=(40.0, 9.0))
+    r = estimate_length_no_reference(img, camera_height_cm=80.0, focal_px=640.0)
+    assert r.ok, r.reasons
+    # Di atas batas fisiologis -> perspektif (bukan head_prior).
+    assert r.method == "perspective_prior"
+
+
+def test_parameter_perspektif_tidak_valid_ditolak():
+    from _cv_synth import synth_plain_mat_with_body  # noqa: F401
+    img, _, _ = synth_baby(head_cm=25.0)  # rasio non-fisiologis -> perspektif
+    r = estimate_length_no_reference(img, camera_height_cm=0.0, focal_px=640.0)
+    assert not r.ok

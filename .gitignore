@@ -13,3 +13,5 @@ results/tabular/final/runs/
 # Kalau ada file besar, abaikan per-nama, jangan pola *.csv.
 experiments/src/babies/
 experiments/results/overlay/babies/
+tests/image-test/
+results/cv/demo_overlay.png

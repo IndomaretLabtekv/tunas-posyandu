@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import pytest
 
-from cv.aruco import apply_homography
+from cv.aruco import MatSpec, apply_homography
 from cv.mat_corners import detect_mat_corners
 from cv.pipeline import measure_length
 from cv.quality import ImageQC
@@ -122,9 +122,50 @@ def test_segiempat_seragam_warna_salah_ditolak():
     assert detect_mat_corners(img, SPEC).ok
 
 
-def test_pola_di_tepi_alas_ditolak():
-    # Alas seragam tapi tepi dalamnya berpola -> ring tidak seragam -> ditolak.
+def test_pola_tepi_ekstrem_ditolak_via_ring_chroma():
+    # Pola tepi dengan lightness ekstrem (sangat gelap/terang): kroma LAB
+    # memampat di L ekstrem sehingga jarak kroma cincin ring ke warna alas
+    # melampaui ambang -> ditolak (fail-closed). Pola kroma-sama dengan
+    # ayunan ringan memang tak terbedakan dari alas polos (batas protokol
+    # DEC-015, diuji terpisah).
     img = np.full((440, 520, 3), 230, np.uint8)
-    img[40:400, 80:460] = (200, 120, 40)          # "alas"
-    img[52:388, 92:448] = (90, 90, 90)            # bingkai gelap di tepi dalam
-    assert not detect_mat_corners(img, SPEC).ok
+    img[20:420, 60:300] = (200, 120, 40)
+    def lightness_strip(y0, y1, x0, x1):
+        for y in range(y0, y1):
+            for x in range(x0, x1, 16):
+                img[y, x:x + 8] = (40, 24, 8)
+                img[y, x + 8:x + 16] = (255, 160, 55)
+    lightness_strip(21, 29, 61, 299)
+    lightness_strip(411, 419, 61, 299)
+    lightness_strip(21, 419, 61, 69)
+    lightness_strip(21, 419, 291, 299)
+    assert not detect_mat_corners(img, SPEC, mat_color=STANDARD_MAT_COLOR).ok
+
+
+def test_rotasi_berlawanan_dan_spec_terbalik():
+    img, _, _, body_cm = synth_plain_mat_with_body()
+    ccw = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    r = measure_length(ccw, SPEC,
+                       segmenter=ColorSegmenter(mat_color=STANDARD_MAT_COLOR),
+                       image_qc=ImageQC(min_blur_var=1.0))
+    assert r.ok and r.length_cm == pytest.approx(body_cm, abs=1.5)
+
+    # Spesifikasi width > height (100x60) juga harus rotation-safe.
+    rev = MatSpec(width_cm=100.0, height_cm=60.0)
+    det = detect_mat_corners(img, rev, mat_color=STANDARD_MAT_COLOR)
+    assert det.ok, det.reason
+    mapped = apply_homography(det.homography, det.image_points)
+    assert np.allclose(mapped, rev.object_points(), atol=0.5)
+
+
+def test_distractor_sewarna_jauh_tidak_ikut_tergabung():
+    # Benda sewarna alas di tempat jauh: tidak boleh menyatu jadi quad palsu;
+    # alas tetap terdeteksi sendiri.
+    img, ppc, (x0, y0, x1, y1) = synth_plain_mat()
+    # Kotak sewarna di area yang JAUH dari alas (tidak overlap, tidak
+    # menyentuh tepi bingkai) -- harus tidak ikut tergabung.
+    img[20:60, 545:585] = STANDARD_MAT_COLOR
+    det = detect_mat_corners(img, SPEC, mat_color=STANDARD_MAT_COLOR)
+    assert det.ok, det.reason
+    expected = np.array([[x0, y0], [x1, y0], [x1, y1], [x0, y1]], dtype=np.float64)
+    assert np.allclose(det.image_points, expected, atol=3.0)

@@ -132,7 +132,10 @@ def _mat_masks_chroma(small: np.ndarray, mat_color_bgr: tuple[int, int, int],
 
     Mengembalikan daftar mask kandidat: komponen terbesar, lalu gabungan
     komponen terbesar 1+2, 1+2+3 (alas yang terbelah bayangan/gradien
-    tetap bisa menyatu). Hanya kroma (a,b) yang dipakai, bukan lightness.
+    tetap bisa menyatu). Penggabungan DIBATASI secara spasial: komponen
+    yang tidak tumpang-tindih dengan bbox akumulasi (di-dilasi) tidak
+    digabung, supaya objek sewarna alas di tempat jauh tidak ikut
+    menyatu menjadi satu quad palsu.
     """
     lab_img = cv2.cvtColor(small, cv2.COLOR_BGR2LAB)
     target = cv2.cvtColor(np.uint8([[mat_color_bgr]]), cv2.COLOR_BGR2LAB)[0, 0, 1:]
@@ -145,9 +148,20 @@ def _mat_masks_chroma(small: np.ndarray, mat_color_bgr: tuple[int, int, int],
     order = sorted(range(1, n), key=lambda i: -stats[i, cv2.CC_STAT_AREA])
     masks: list[np.ndarray] = []
     acc = np.zeros_like(base)
+    bbox: tuple[int, int, int, int] | None = None
     for i in order[:max_merge]:
+        x, y, w, h = stats[i, cv2.CC_STAT_LEFT], stats[i, cv2.CC_STAT_TOP], \
+                     stats[i, cv2.CC_STAT_WIDTH], stats[i, cv2.CC_STAT_HEIGHT]
+        if bbox is not None:
+            bx0, by0, bx1, by1 = bbox
+            pad = 0.2
+            if x > bx1 + pad * (bx1 - bx0) or x + w < bx0 - pad * (bx1 - bx0) \
+                    or y > by1 + pad * (by1 - by0) or y + h < by0 - pad * (by1 - by0):
+                break  # komponen terpisah jauh: bukan pecahan alas yang sama
         acc[labels == i] = 255
         masks.append(acc.copy())
+        ys, xs = np.nonzero(labels == i)
+        bbox = (int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max()))
     return masks
 
 

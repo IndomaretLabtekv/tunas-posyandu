@@ -1,19 +1,19 @@
-group,image,det_nocolor,det_color,reason,length_cm,confidence,model,latency_ms
-babies,Baby.jpg,False,False,alas tidak terdeteksi,,,color,7.6
-babies,Baby_lying_on_top_of_a_towel_on_a_table_(AM_80884-1).jpg,False,False,alas tidak terdeteksi,,,color,8.8
-babies,Baby_lying_on_white_towel.jpg,False,False,alas tidak terdeteksi,,,color,3.0
-babies,Baby_lying_with_head_on_purple_cushion.jpg,False,False,alas tidak terdeteksi,,,color,7.3
-babies,Portrait_of_baby_lying_on_a_rug_outside_(AM_75998-1).jpg,False,False,alas tidak terdeteksi,,,color,6.8
-babies,Portrait_of_baby_lying_on_a_rug_outside_(AM_76005-1).jpg,False,False,alas tidak terdeteksi,,,color,6.1
-babies,Portrait_of_baby_lying_on_cushion_(AM_80023-1).jpg,False,False,alas tidak terdeteksi,,,color,9.0
-babies,Portrait_of_baby_lying_on_cushion_(AM_80025-1).jpg,False,False,alas tidak terdeteksi,,,color,8.6
-babies,Portrait_of_baby_lying_on_cushion_(AM_80027-1).jpg,False,False,alas tidak terdeteksi,,,color,6.5
-babies,Smiling_baby_lying_on_towel.jpg,False,False,alas tidak terdeteksi,,,color,9.8
-mats,Coir_mat2.jpg,False,False,alas tidak terdeteksi,,,color,8.7
-mats,Cotton_Yoga_Mats.png,False,False,alas tidak terdeteksi,,,color,8.1
-mats,Gaim_Yoga_Mat_1_2019-05-15.jpg,False,False,alas tidak terdeteksi,,,color,7.6
-mats,Gaim_Yoga_Mat_6_2019-05-15.jpg,False,False,alas tidak terdeteksi,,,color,7.3
-mats,Oakley_yoga_mat.jpg,False,False,alas tidak terdeteksi,,,color,7.5
-mats,Yoga_Mat_Made_of_Carpet_Underlay.jpg,False,False,alas tidak terdeteksi,,,color,7.1
-mats,Yoga_mat.jpg,False,False,alas tidak terdeteksi,,,color,13.2
-mats,Yoga_mats.png,False,False,alas tidak terdeteksi,,,color,6.2
+group,image,det_nocolor,det_color,det_w_cm,det_h_cm,reason,length_cm,confidence,model,latency_ms,est_cm,est_method,est_band
+babies,Baby.jpg,False,False,,,alas tidak terdeteksi,,,color,8.2,54.4,head_prior,8.2
+babies,Baby_lying_on_top_of_a_towel_on_a_table_(AM_80884-1).jpg,False,False,,,alas tidak terdeteksi,,,color,9.3,50.7,perspective_prior,15.2
+babies,Baby_lying_on_white_towel.jpg,False,False,,,alas tidak terdeteksi,,,color,2.4,98.4,perspective_prior,29.5
+babies,Baby_lying_with_head_on_purple_cushion.jpg,False,False,,,alas tidak terdeteksi,,,color,12.5,42.4,perspective_prior,12.7
+babies,Portrait_of_baby_lying_on_a_rug_outside_(AM_75998-1).jpg,False,False,,,alas tidak terdeteksi,,,color,6.3,59.7,perspective_prior,17.9
+babies,Portrait_of_baby_lying_on_a_rug_outside_(AM_76005-1).jpg,False,False,,,alas tidak terdeteksi,,,color,11.3,54.3,perspective_prior,16.3
+babies,Portrait_of_baby_lying_on_cushion_(AM_80023-1).jpg,False,False,,,alas tidak terdeteksi,,,color,9.2,78.3,perspective_prior,23.5
+babies,Portrait_of_baby_lying_on_cushion_(AM_80025-1).jpg,False,False,,,alas tidak terdeteksi,,,color,6.7,82.3,perspective_prior,24.7
+babies,Portrait_of_baby_lying_on_cushion_(AM_80027-1).jpg,False,False,,,alas tidak terdeteksi,,,color,7.9,78.7,perspective_prior,23.6
+babies,Smiling_baby_lying_on_towel.jpg,False,False,,,alas tidak terdeteksi,,,color,7.7,52.0,perspective_prior,15.6
+mats,Coir_mat2.jpg,False,False,,,alas tidak terdeteksi,,,color,17.9,26.3,perspective_prior,7.9
+mats,Cotton_Yoga_Mats.png,False,False,,,alas tidak terdeteksi,,,color,6.9,42.1,perspective_prior,12.6
+mats,Gaim_Yoga_Mat_1_2019-05-15.jpg,False,True,183.0,61.0,,78.65,0.4,color,86.2,,,
+mats,Gaim_Yoga_Mat_6_2019-05-15.jpg,False,False,,,alas tidak terdeteksi,,,color,10.2,107.7,perspective_prior,32.3
+mats,Oakley_yoga_mat.jpg,False,False,,,alas tidak terdeteksi,,,color,8.3,43.0,head_prior,6.5
+mats,Yoga_Mat_Made_of_Carpet_Underlay.jpg,False,False,,,alas tidak terdeteksi,,,color,8.1,36.0,perspective_prior,10.8
+mats,Yoga_mat.jpg,False,False,,,alas tidak terdeteksi,,,color,8.3,43.8,perspective_prior,13.1
+mats,Yoga_mats.png,False,False,,,alas tidak terdeteksi,,,color,6.1,47.2,head_prior,7.1

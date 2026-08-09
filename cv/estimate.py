@@ -106,7 +106,8 @@ def estimate_length_no_reference(
 
     # 4. Fallback: prior perspektif (foto miring/samping atau tanpa kulit).
     f_px = focal_px if focal_px else DEFAULT_FOCAL_FRACTION * image.shape[1]
-    if f_px <= 0 or camera_height_cm <= 0:
+    if not (np.isfinite(f_px) and f_px > 0
+            and np.isfinite(camera_height_cm) and camera_height_cm > 0):
         return EstimateResult(ok=False, reasons=["parameter perspektif tidak valid"])
     length_cm = span_px * camera_height_cm / f_px
     reasons = []
@@ -179,9 +180,14 @@ def _head_diameter_px(image: np.ndarray, foreground: np.ndarray, span_px: float,
         bins: dict[int, list[float]] = {}
         for p, q in zip(proj[sel], pperp[sel]):
             bins.setdefault(int((p - lo) / bin_px), []).append(q)
+        # Scan selalu DARI ujung siluet ke dalam: untuk ujung max, bin
+        # dibalik (naik dari ujung). Tanpa ini, ujung max ter-scan dari
+        # leher ke kepala dan torso yang lebih lebar bisa dikira kepala.
+        keys = sorted(bins, reverse=True) if end == float(proj.max()) \
+            else sorted(bins)
         run_max = 0.0
         head_w = 0.0
-        for k in sorted(bins):
+        for k in keys:
             w = float(np.ptp(bins[k]))
             if w > run_max:
                 run_max = w

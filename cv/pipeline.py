@@ -76,8 +76,9 @@ def measure_length(
     default deteksi alas polos dengan verifikasi warna standar produk
     (DEC-015). Mode marker ArUco: `detector=cv.aruco.detect_markers`.
     `fallback_segmenter`: dipakai otomatis bila segmenter utama gagal;
-    default = baseline warna dengan warna alas produk (DEC-014). Lewatkan
-    fallback_segmenter lain untuk menimpa; None melarang fallback.
+    default = baseline warna dengan warna alas produk (DEC-014) --
+    berlaku untuk alur produk; mode marker/alas lain lewatkan
+    fallback_segmenter sendiri. Fallback dilewati bila backend sama.
     """
     t0 = time.perf_counter()
     segmenter = segmenter or get_segmenter("birefnet")

@@ -88,7 +88,8 @@ Buka `http://localhost:3000`. Backend tersedia di `http://localhost:8000/docs`.
 ### Alur demo tiga peran
 
 `make seed-demo` membuat satu akun ibu, kader, dan ahli gizi pada scope yang sama,
-serta satu profil anak berusia 180 hari. Kredensial dibaca dari `DEMO_PASSWORD`
+serta 12 profil anak, 28 pemeriksaan, dan 10 kasus dengan status workflow beragam.
+Perintah ini idempotent sehingga aman dijalankan ulang. Kredensial dibaca dari `DEMO_PASSWORD`
 dan dicetak oleh seed command, bukan ditanam sebagai secret produksi.
 
 Pada layar desktop, halaman login menyediakan tombol **Ibu Demo**, **Kader Demo**,

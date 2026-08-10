@@ -1,9 +1,10 @@
-"""Create deterministic local demo accounts and one age-valid child."""
+"""Create deterministic demo accounts and dashboard-ready workflow data."""
 
 from __future__ import annotations
 
 import os
-from datetime import date, timedelta
+import json
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import select
 
@@ -46,6 +47,126 @@ def _ensure_user(conn, *, name: str, role: str, password: str, scope_key: str) -
     )
 
 
+DEMO_CHILDREN = (
+    ("Bayi Demo", "F", 180, "normal", []),
+    ("Alya", "F", 245, "normal", []),
+    ("Bima", "M", 310, "needs_review", ["low_confidence"]),
+    ("Citra", "F", 420, "needs_review", ["growth_signal"]),
+    ("Daffa", "M", 520, "assigned", ["estimate_mode"]),
+    ("Elina", "F", 275, "assigned", ["low_confidence"]),
+    ("Farhan", "M", 390, "home_visit", ["growth_signal"]),
+    ("Gita", "F", 455, "home_visit", ["cv_rejected"]),
+    ("Hana", "F", 330, "verified_risk", ["growth_signal"]),
+    ("Ilham", "M", 610, "verified_risk", ["growth_signal"]),
+    ("Jasmine", "F", 500, "referred", ["growth_signal"]),
+    ("Kayla", "F", 365, "resolved", ["low_confidence"]),
+)
+
+
+def _seed_children(conn, *, user_ids: dict[str, int], scope_key: str) -> None:
+    existing = {
+        child["name"]: int(child["child_id"])
+        for child in store.list_owned_children(conn, user_ids["mother"])
+    }
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+
+    for index, (name, sex, age_days, target_status, reasons) in enumerate(DEMO_CHILDREN):
+        child_id = existing.get(name)
+        if child_id is None:
+            child_id = store.create_owned_child(
+                conn,
+                name=name,
+                sex=sex,
+                mother_id=user_ids["mother"],
+                birth_date=(date.today() - timedelta(days=age_days)).isoformat(),
+                scope_key=scope_key,
+            )
+        if store.list_growth_checks(conn, child_id):
+            continue
+
+        measured_at = now - timedelta(days=2 + index * 4)
+        base_weight = 6.2 + age_days / 180
+        base_length = 58.0 + age_days / 28
+        store.record_growth_check(
+            conn,
+            child_id=child_id,
+            submitted_by=user_ids["mother"],
+            source="mother",
+            age_days=age_days - 30,
+            weight_kg=round(base_weight - 0.3, 1),
+            length_cm=round(base_length - 1.4, 1),
+            haz=-0.4,
+            mode="measurement",
+            confidence=0.96,
+            qc_reasons=[],
+            status="normal",
+            measured_at=measured_at - timedelta(days=30),
+            next_due_at=measured_at,
+        )
+        check_id = store.record_growth_check(
+            conn,
+            child_id=child_id,
+            submitted_by=user_ids["mother"],
+            source="mother",
+            age_days=age_days,
+            weight_kg=round(base_weight, 1),
+            length_cm=round(base_length, 1),
+            haz=-2.3 if "growth_signal" in reasons else -0.7,
+            mode="estimate" if "estimate_mode" in reasons else "measurement",
+            confidence=0.42 if "low_confidence" in reasons else 0.93,
+            qc_reasons=reasons,
+            status="normal" if target_status == "normal" else "needs_review",
+            measured_at=measured_at,
+            next_due_at=measured_at + timedelta(days=30),
+        )
+        if target_status == "normal":
+            continue
+
+        case_id = store.create_follow_up_case(
+            conn,
+            child_id=child_id,
+            growth_check_id=check_id,
+            scope_key=scope_key,
+            status="needs_review",
+            priority="urgent" if {"growth_signal", "cv_rejected"} & set(reasons) else "review",
+            reason_codes=reasons,
+        )
+        transitions = {
+            "needs_review": (),
+            "assigned": ("assigned",),
+            "home_visit": ("assigned", "home_visit"),
+            "verified_risk": ("assigned", "home_visit", "verified_risk"),
+            "referred": ("assigned", "home_visit", "verified_risk", "referred"),
+            "resolved": ("assigned", "home_visit", "verified_risk", "resolved"),
+        }[target_status]
+        for status in transitions:
+            actor_id = user_ids["nutritionist"] if status in {"referred", "resolved"} else user_ids["kader"]
+            if status == "verified_risk":
+                store.record_growth_check(
+                    conn,
+                    child_id=child_id,
+                    submitted_by=user_ids["kader"],
+                    source="kader",
+                    age_days=age_days,
+                    weight_kg=round(base_weight + 0.1, 1),
+                    length_cm=round(base_length - 0.3, 1),
+                    haz=-2.2,
+                    mode="manual_verification",
+                    confidence=1.0,
+                    qc_reasons=[],
+                    status="needs_review",
+                    measured_at=measured_at + timedelta(days=1),
+                    next_due_at=measured_at + timedelta(days=31),
+                )
+            store.transition_case(
+                conn,
+                case_id=case_id,
+                new_status=status,
+                actor_id=actor_id,
+                notes=json.dumps({"notes": f"Data demo: {status.replace('_', ' ')}"}),
+            )
+
+
 def main() -> None:
     password = _required("DEMO_PASSWORD")
     scope_key = os.getenv("DEMO_SCOPE_KEY", "posyandu-demo").strip()
@@ -69,20 +190,12 @@ def main() -> None:
             for name, role in accounts
         }
 
-        children = store.list_owned_children(conn, user_ids["mother"])
-        if not children:
-            store.create_owned_child(
-                conn,
-                name="Bayi Demo",
-                sex="F",
-                mother_id=user_ids["mother"],
-                birth_date=(date.today() - timedelta(days=180)).isoformat(),
-                scope_key=scope_key,
-            )
+        _seed_children(conn, user_ids=user_ids, scope_key=scope_key)
     finally:
         conn.close()
 
     print("Demo Tunas siap")
+    print(f"Data: {len(DEMO_CHILDREN)} anak / 10 kasus tindak lanjut")
     print(f"Scope: {scope_key}")
     for name, role in accounts:
         print(f"{role}: {name} / {password}")

@@ -106,6 +106,11 @@ The result is that deteriorating nutritional and developmental conditions go und
 
 ## 4. Solution Overview
 
+> The broader product concepts in this legacy overview are non-binding future
+> context. The current implementation and demo scope is only the 0–23 month
+> growth workflow defined in Section 5 and its API in Section 6. Food logging,
+> speech analysis, Claude recommendations, and push notifications are excluded.
+
 NutriLink is a dual-interface mobile platform with two interconnected modules:
 
 ### Module A — Mother-Facing Mobile App
@@ -152,47 +157,40 @@ inference is future work and is not part of this contract.
 
 ## 5. MVP Features
 
-### Must Have — For Demo
+### Current MVP — 0–23 Month Growth Workflow Only
 
-These features must be functional and demonstrable during the hackathon presentation.
+These are the only features in the current demo and implementation contract.
 
-#### Mother App
-
-| Feature | Description | Notes |
-|---|---|---|
-| Food photo logging | Camera capture + structured nutritional summary | Outside the 0–23 month backend workflow |
-| Manual food input | Searchable food list from TKPI subset | Pre-load 100–150 most common local foods for demo |
-| Nutrition recommendation | Per-log AI recommendation card (dismissable) | Can use Claude API for generation; keep prompt structured |
-| Guided growth photo | Mother submits an image for server-side CV screening | Output recumbent-length estimate and confidence |
-| Manual weight input | Simple numeric input accompanying the growth check | Retained as a structured measurement |
-| Growth result display | Show recumbent-length result, provenance, verification state, and case status | Human review remains required |
-| Panic report button | One-tap urgent alert with optional short text | Must reach CHW dashboard immediately |
-| Offline-first behavior | All inputs work without connectivity; sync when available | Core architecture requirement |
-
-#### CHW Dashboard
+#### Mother
 
 | Feature | Description | Notes |
 |---|---|---|
-| Priority queue | List of mothers/children sorted by AI risk score | Score based on nutritional deficit + growth flag + panic alert |
-| Mother profile view | Timeline of logs, growth data, flags for each mother | Clicking from queue opens this view |
-| Intervention log | CHW can record action taken (supplement given, visit scheduled, escalated) | Simple dropdown + notes field |
-| Alert notification | Panic report triggers visible alert on dashboard | Push notification or polling acceptable for demo |
-| Role-based login | Separate login flows for Mother, CHW, and Supervisor | Basic JWT auth sufficient |
+| Growth-check submission | Submit an image, age, weight, and context to the backend | Supported only for `0 <= age_days <= 730` |
+| Growth result | View recumbent-length estimate, provenance, verification state, and case status | Screening signal; human review remains required |
+
+#### Kader
+
+| Feature | Description | Notes |
+|---|---|---|
+| Case queue | View assigned submitted cases and their priority | Does not establish a diagnosis |
+| Operational follow-up | Record contact, home visit, repeat measurement, and notes | Moves cases through the documented state machine |
 
 ---
 
-### Nice to Have — If Time Allows
+#### Nutritionist/Puskesmas
 
-These features strengthen the product but are not required for demo day.
-
-| Feature | Description | Priority |
+| Feature | Description | Notes |
 |---|---|---|
-| Speech milestone check | Audio recording + structured milestone flag | Outside the 0–23 month backend workflow |
-| Crowdsourced food validation | CHW can approve/add unrecognized foods to local DB | Medium |
-| Aggregate supervisor view | Puskesmas-level reporting and heatmap | Medium |
-| Multilingual support | Bahasa Indonesia + local language toggle | Low for demo |
-| Supplement inventory tracking | Track what CHW has distributed and to whom | Low for demo |
-| Push notification to mother | Reminder for daily log or upcoming monthly check | Low for demo |
+| Verified case review | Review measurement provenance and the case timeline | Only verified measurements support a decision |
+| Intervention or referral | Record the next nutrition action, referral, or resolution | `resolved` is terminal |
+
+### Deferred features — non-binding future context
+
+Food logging, speech milestone analysis, Claude-backed recommendations, push
+notifications, food validation, supervisor aggregates, multilingual support,
+and supplement inventory are not MVP requirements, demo steps, API endpoints,
+or timeline commitments for this implementation. They may be reconsidered in a
+later product phase only; this section creates no current scope.
 
 ---
 
@@ -201,17 +199,9 @@ These features strengthen the product but are not required for demo day.
 ### Authentication
 
 ```
-POST   /api/auth/register          Register new user (mother / CHW / supervisor)
+POST   /api/auth/register          Register new user (mother / kader / nutritionist)
 POST   /api/auth/login             Login and receive JWT token
 POST   /api/auth/refresh           Refresh access token
-```
-
-### Mother — Food Logging
-
-```
-POST   /api/logs/food              Submit food log (outside this workflow)
-GET    /api/logs/food/:userId      Get food log history for a user
-GET    /api/logs/food/:userId/today  Get today's logs for quick display
 ```
 
 ### Mother — Growth Check
@@ -221,43 +211,13 @@ POST   /api/logs/growth            Submit growth check result (recumbent length,
 GET    /api/logs/growth/:userId    Get growth history for a child
 ```
 
-### Mother — Speech Milestone
+### Kader and Nutritionist Dashboard
 
 ```
-POST   /api/logs/speech            Submit speech milestone flag result
-GET    /api/logs/speech/:userId    Get speech milestone history
-```
-
-### Mother — Panic Report
-
-```
-POST   /api/alerts/panic           Submit panic report (triggers priority escalation)
-GET    /api/alerts/panic/:userId   Get panic report history for a user
-```
-
-### CHW Dashboard
-
-```
-GET    /api/dashboard/queue        Get prioritized intervention queue for logged-in CHW
-GET    /api/dashboard/mother/:id   Get full profile and history for a specific mother
-POST   /api/interventions          Log an intervention (supplement, visit, escalation)
-GET    /api/interventions/:userId  Get intervention history for a mother
-PATCH  /api/alerts/:alertId        Mark alert as acknowledged / resolved
-```
-
-### Nutrition Reference (Local Food DB)
-
-```
-GET    /api/foods/search?q=        Search local food database
-GET    /api/foods/:id              Get nutritional details for a specific food item
-POST   /api/foods/suggest          Suggest a new food item (pending CHW validation)
-```
-
-### AI Recommendation (Claude API-backed)
-
-```
-POST   /api/recommend/nutrition    Generate dietary recommendation based on log summary
-POST   /api/recommend/priority     Compute risk score for a mother/child record
+GET    /api/dashboard/cases        Get scoped cases for the logged-in kader or nutritionist
+GET    /api/dashboard/cases/:id    Get the case timeline and measurement provenance
+POST   /api/cases/:id/follow-up    Record kader operational follow-up
+POST   /api/cases/:id/decision     Record nutritionist intervention, referral, or resolution
 ```
 
 > **Note:** All endpoints require Authorization header with Bearer token. Mother endpoints are scoped to the authenticated user's own data. CHW endpoints are scoped to their assigned community. Supervisor endpoints have read access across all communities.
@@ -274,17 +234,13 @@ nutrilink/
 │   │   ├── (auth)/                  # Login, register screens
 │   │   ├── (tabs)/
 │   │   │   ├── home.tsx             # Daily summary + quick log
-│   │   │   ├── food-log.tsx         # Photo capture + manual input
 │   │   │   ├── growth-check.tsx     # Guided camera + weight input
-│   │   │   ├── speech-check.tsx     # Audio elicitation screen
-│   │   │   └── profile.tsx          # History and personal data
-│   │   └── panic.tsx                # Panic report button (always accessible)
+│   │   │   └── profile.tsx          # Growth history and case status
 │   │
 │   ├── components/
 │   │   ├── GuidedCamera.tsx         # Overlay-assisted camera component
-│   │   ├── NutritionCard.tsx        # Recommendation display card
 │   │   ├── GrowthChart.tsx          # Height/weight trend chart
-│   │   └── PanicButton.tsx          # Floating panic button
+│   │   └── CaseStatus.tsx            # Verification and case status
 │   │
 │   ├── services/
 │   │   ├── growthApi.ts             # Server-side growth screening API client
@@ -317,20 +273,16 @@ nutrilink/
 │   │   ├── alerts.ts
 │   │   ├── dashboard.ts
 │   │   ├── interventions.ts
-│   │   ├── foods.ts
-│   │   └── recommend.ts
+│   │   └── cases.ts
 │   │
 │   ├── services/
 │   │   ├── priorityScoring.ts       # AI-driven risk score computation
-│   │   ├── claudeClient.ts          # Anthropic API integration
-│   │   └── notificationService.ts   # Panic alert push logic
+│   │   └── workflowService.ts       # Screening and case workflow logic
 │   │
 │   ├── models/                      # DB schema (Prisma / Mongoose)
 │   │   ├── User.ts
-│   │   ├── FoodLog.ts
 │   │   ├── GrowthLog.ts
-│   │   ├── SpeechLog.ts
-│   │   ├── Alert.ts
+│   │   ├── Case.ts
 │   │   └── Intervention.ts
 │   │
 │   └── middleware/
@@ -352,9 +304,9 @@ nutrilink/
 | Week | Focus | Milestone |
 |---|---|---|
 | Week 1 | Foundation & Setup | All environments running; auth working; data models defined |
-| Week 2 | Core Mother App Features | Food logging + growth check functional |
-| Week 3 | CHW Dashboard + AI Integration | Dashboard live; priority scoring working; Claude API connected |
-| Week 4 | Integration, Polish & Demo Prep | End-to-end flow working; demo script finalized |
+| Week 2 | Mother Growth Submission | Growth check submission and server-side screening functional |
+| Week 3 | Kader + Nutritionist Workflow | Case queue, verification, follow-up, intervention, and referral working |
+| Week 4 | Integration, Polish & Demo Prep | End-to-end growth workflow demo finalized |
 
 ---
 
@@ -370,47 +322,34 @@ nutrilink/
 - [ ] Define and migrate all data models
 - [ ] Build login/register screens (mobile + dashboard)
 - [ ] Set up CI/CD or deployment pipeline (Railway / Render / Vercel)
-- [ ] Bundle TKPI food subset (100–150 foods) as local JSON in mobile app
-
 **Deliverable:** All three apps running locally; a user can register and log in.
 
 ---
 
 ### Week 2 — Core Mother App (Days 8–14)
 
-**Goals:** Food logging and growth check are fully functional end-to-end
+**Goals:** The mother growth submission is functional end-to-end
 
-- [ ] Build food photo capture screen with camera permissions
-- [ ] Integrate lightweight food estimation model (or rule-based nutritional lookup from local DB)
-- [ ] Build manual food search + input screen
-- [ ] Connect food log to backend API (with offline queue for low-connectivity)
 - [ ] Implement guided camera overlay component for growth check
 - [ ] Integrate the existing server-side CV path for recumbent-length screening
 - [ ] Build weight manual input screen
 - [ ] Connect growth log to backend API
-- [ ] Build nutrition recommendation card (Claude API integration — first pass)
-- [ ] Build basic home screen showing daily summary
 
-**Deliverable:** A mother can log food and complete a growth check; data appears in the backend.
+**Deliverable:** A mother can submit a growth check and see its structured result and verification state.
 
 ---
 
-### Week 3 — Dashboard + AI + Alerts (Days 15–21)
+### Week 3 — Case Dashboard + Decisions (Days 15–21)
 
-**Goals:** CHW dashboard functional; priority scoring live; panic report working
+**Goals:** Kader and nutritionist case workflow functional; verification and decisions working
 
-- [ ] Build CHW priority queue page (pulls from backend scoring endpoint)
-- [ ] Implement priority scoring logic in backend (weight: panic > growth flag > nutrition deficit)
-- [ ] Build individual mother profile / timeline view
+- [ ] Build the kader case queue and operational follow-up form
+- [ ] Implement case priority from the growth screening signal
+- [ ] Build the nutritionist verified timeline and review form
 - [ ] Build intervention logging panel
-- [ ] Build role-based access guard (Mother vs CHW vs Supervisor)
-- [ ] Implement panic report button in mobile app
-- [ ] Connect panic report to backend; trigger alert on dashboard
-- [ ] Refine Claude API prompt for nutrition recommendations (structured output)
-- [ ] Add basic speech milestone screen (audio recording + simple flag — Nice to Have if time permits)
-- [ ] Build supervisor aggregate view (optional, if time allows)
+- [ ] Build role-based access guard (`mother` vs `kader` vs `nutritionist`)
 
-**Deliverable:** CHW can log in, see a prioritized list of mothers, view profiles, and log interventions. Panic report flows end-to-end.
+**Deliverable:** Kader can follow up a submitted case; nutritionist can verify, intervene, refer, or resolve it.
 
 ---
 
@@ -423,12 +362,12 @@ nutrilink/
 - [ ] Fix critical bugs and edge cases
 - [ ] Polish mobile UI (loading states, error handling, empty states)
 - [ ] Polish dashboard UI (responsive layout, clear visual hierarchy)
-- [ ] Prepare demo script: Mother logs food → growth check → CHW dashboard → intervention
+- [ ] Prepare demo script: Mother submits growth check → kader follow-up → nutritionist decision
 - [ ] Prepare presentation slides (problem, solution, architecture, impact, roadmap)
 - [ ] Rehearse demo at least twice with full team
 - [ ] Deploy to staging environment for demo day
 
-**Deliverable:** Demo-ready build with seeded data; presentation slides complete.
+**Deliverable:** Demo-ready 0–23 month growth workflow with seeded cases; presentation slides complete.
 
 ---
 
@@ -487,8 +426,6 @@ Focus: Asia-Pacific rollout beyond Indonesia
 |---|---|---|
 | Mobile framework | React Native (Expo) | Cross-platform; large ecosystem; Expo supports the submission flow |
 | Growth screening CV | Existing Python/OpenCV backend path | Reuses the current server-side implementation for the demo |
-| Food database | TKPI subset (bundled) + API fallback | Offline-first; covers Indonesian staples adequately for MVP |
-| AI recommendations | Claude API (claude-sonnet-4-20250514) | Structured output; multilingual; handles nutritional context well |
 | Priority scoring | Rule-based weighted score → ML in Phase 2 | Explainable to CHWs; fast to implement; upgradeable |
 | Backend | Node.js + Express + PostgreSQL | Familiar stack; good ORM support (Prisma); scales adequately |
 | Dashboard | Next.js | SSR for fast initial load; easy deployment; good for data tables |

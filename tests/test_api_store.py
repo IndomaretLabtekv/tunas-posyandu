@@ -1,15 +1,16 @@
-"""Test SQLite persistence layer (api/store.py)."""
+"""Test SQLAlchemy persistence layer (api/store.py)."""
 
 import pytest
+from sqlalchemy import text
 
 from api import store
 
 
 @pytest.fixture
 def tmp_conn(tmp_path, monkeypatch):
-    """Provide an initialized SQLite connection isolated per test."""
+    """Provide an initialized SQLAlchemy connection isolated per test."""
     db_path = tmp_path / "tunas_test.db"
-    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setenv("DATABASE_URL", f"sqlite+pysqlite:///{db_path}")
     conn = store.get_conn()
     store.init_db(conn)
     try:
@@ -20,9 +21,9 @@ def tmp_conn(tmp_path, monkeypatch):
 
 def test_init_db_creates_tables(tmp_conn):
     cur = tmp_conn.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+        text("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
     )
-    tables = {row["name"] for row in cur.fetchall()}
+    tables = {row[0] for row in cur.fetchall()}
     assert "children" in tables
     assert "visits" in tables
 
@@ -75,7 +76,7 @@ def test_get_visit_missing_returns_none(tmp_conn):
 
 def test_get_conn_creates_parent_directory(tmp_path, monkeypatch):
     db_path = tmp_path / "nested" / "tunas.db"
-    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setenv("DATABASE_URL", f"sqlite+pysqlite:///{db_path}")
     conn = store.get_conn()
     try:
         store.init_db(conn)

@@ -16,7 +16,7 @@ from api.main import app
 def client(monkeypatch):
     with tempfile.TemporaryDirectory() as tmp:
         db_path = Path(tmp) / "tunas.db"
-        monkeypatch.setenv("DB_PATH", str(db_path))
+        monkeypatch.setenv("DATABASE_URL", f"sqlite+pysqlite:///{db_path}")
         monkeypatch.setenv("MODEL_PATH", "results/tabular/final/primary_model.joblib")
         # Clear model cache so each test uses the current MODEL_PATH.
         from api.model import _load_artifact_cached

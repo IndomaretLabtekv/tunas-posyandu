@@ -367,6 +367,94 @@ def create_child_profile(
     conn.commit()
 
 
+def create_owned_child(
+    conn: Connection,
+    *,
+    name: str,
+    sex: str,
+    mother_id: int,
+    birth_date: str,
+    scope_key: str,
+) -> int:
+    """Create the legacy child row and workflow ownership row atomically."""
+    if sex not in {"M", "F"}:
+        raise ValueError("sex harus M atau F")
+    if not name.strip():
+        raise ValueError("name tidak boleh kosong")
+    if not birth_date.strip():
+        raise ValueError("birth_date tidak boleh kosong")
+
+    try:
+        result = conn.execute(
+            insert(children_table)
+            .values(name=name.strip(), sex=sex)
+            .returning(children_table.c.id)
+        )
+        try:
+            row = result.fetchone()
+            assert row is not None
+            child_id = int(row[0])
+        finally:
+            result.close()
+        conn.execute(
+            insert(child_profiles_table).values(
+                child_id=child_id,
+                mother_id=mother_id,
+                birth_date=birth_date,
+                scope_key=_require_scope(scope_key),
+            )
+        )
+        conn.commit()
+        return child_id
+    except Exception:
+        conn.rollback()
+        raise
+
+
+def get_child_profile(conn: Connection, child_id: int) -> dict[str, Any] | None:
+    """Return child identity plus mother ownership and workflow scope."""
+    row = conn.execute(
+        select(
+            children_table.c.id.label("child_id"),
+            children_table.c.name,
+            children_table.c.sex,
+            child_profiles_table.c.mother_id,
+            child_profiles_table.c.birth_date,
+            child_profiles_table.c.scope_key,
+        )
+        .select_from(
+            children_table.join(
+                child_profiles_table,
+                children_table.c.id == child_profiles_table.c.child_id,
+            )
+        )
+        .where(children_table.c.id == child_id)
+    ).fetchone()
+    return dict(row._mapping) if row else None
+
+
+def list_owned_children(conn: Connection, mother_id: int) -> list[dict[str, Any]]:
+    """List only children explicitly linked to one mother account."""
+    rows = conn.execute(
+        select(
+            children_table.c.id.label("child_id"),
+            children_table.c.name,
+            children_table.c.sex,
+            child_profiles_table.c.birth_date,
+            child_profiles_table.c.scope_key,
+        )
+        .select_from(
+            children_table.join(
+                child_profiles_table,
+                children_table.c.id == child_profiles_table.c.child_id,
+            )
+        )
+        .where(child_profiles_table.c.mother_id == mother_id)
+        .order_by(children_table.c.id)
+    ).fetchall()
+    return [dict(row._mapping) for row in rows]
+
+
 def record_growth_check(
     conn: Connection,
     *,
@@ -419,6 +507,35 @@ def record_growth_check(
         result.close()
     conn.commit()
     return check_id
+
+
+def list_growth_checks(conn: Connection, child_id: int) -> list[dict[str, Any]]:
+    """Return a child's structured submissions with optional case state."""
+    rows = conn.execute(
+        select(
+            growth_checks_table,
+            follow_up_cases_table.c.id.label("case_id"),
+            follow_up_cases_table.c.status.label("case_status"),
+        )
+        .select_from(
+            growth_checks_table.outerjoin(
+                follow_up_cases_table,
+                growth_checks_table.c.id == follow_up_cases_table.c.growth_check_id,
+            )
+        )
+        .where(growth_checks_table.c.child_id == child_id)
+        .order_by(growth_checks_table.c.measured_at.asc(), growth_checks_table.c.id.asc())
+    ).fetchall()
+
+    checks: list[dict[str, Any]] = []
+    for row in rows:
+        item = dict(row._mapping)
+        item["qc_reasons"] = json.loads(item.get("qc_reasons") or "[]")
+        for key in ("measured_at", "next_due_at"):
+            if isinstance(item.get(key), datetime):
+                item[key] = item[key].isoformat()
+        checks.append(item)
+    return checks
 
 
 def create_follow_up_case(
@@ -571,3 +688,42 @@ def record_case_action(
         result.close()
     conn.commit()
     return action_id
+
+
+def list_case_actions(conn: Connection, case_id: int) -> list[dict[str, Any]]:
+    """Return the immutable action log for one follow-up case."""
+    rows = conn.execute(
+        select(case_actions_table)
+        .where(case_actions_table.c.case_id == case_id)
+        .order_by(case_actions_table.c.created_at.asc(), case_actions_table.c.id.asc())
+    ).fetchall()
+    actions: list[dict[str, Any]] = []
+    for row in rows:
+        item = dict(row._mapping)
+        raw_notes = item.get("notes") or ""
+        try:
+            details = json.loads(raw_notes)
+        except (TypeError, json.JSONDecodeError):
+            details = None
+        item["details"] = details if isinstance(details, dict) else None
+        if isinstance(item.get("created_at"), datetime):
+            item["created_at"] = item["created_at"].isoformat()
+        actions.append(item)
+    return actions
+
+
+def get_scoped_case(
+    conn: Connection,
+    *,
+    case_id: int,
+    scope_key: str,
+) -> dict[str, Any] | None:
+    """Resolve a case only inside the caller's authorized service scope."""
+    return next(
+        (
+            case
+            for case in list_cases(conn, scope_key=scope_key)
+            if int(case["id"]) == case_id
+        ),
+        None,
+    )

@@ -17,9 +17,9 @@
 | ID | Klaim | Implemented | Evidence | Paper | Demo |
 |---|---|---|---|---|---|
 | C-A0 | Galat akibat offset bidang terukur & dikendalikan lewat protokol | ☐ | CV-00 | §3.3, §4.1 | — |
-| C-A1 | Deteksi 4 marker ArUco pada alas ukur | ☐ | CV-01 | §3.3 | |
+| C-A1 | Deteksi 4 sudut alas polos berukuran diketahui (tanpa marker, DEC-015) | ☐ | CV-01 | §3.3 | |
 | C-A2 | Rektifikasi perspektif bidang alas (homografi) | ☐ | CV-02 | §3.3 | |
-| C-A3 | Quality control: blur, keterbacaan marker, kelengkapan tubuh | ☐ | CV-03 | §3.3 | |
+| C-A3 | Quality control: blur, kejelasan sudut alas, kelengkapan tubuh | ☐ | CV-03 | §3.3 | |
 | C-A4 | Geometry QC: penolakan citra dengan kemiringan kamera berlebih | ☐ | CV-04 | §3.3, §4.1 | |
 | C-A5 | Ekstraksi endpoint tubuh berbasis segmentasi | ☐ | CV-05 | §3.3 | |
 | C-A6a | QC postur berbasis geometri siluet | ☐ | CV-05 | §3.3 | |
@@ -28,6 +28,7 @@
 | C-A8 | Galat pada kondisi tangkap tidak ideal (sudut & jarak bervariasi) | ☐ | CV-08 | §4.1, §4.4 | |
 | C-A9 | Konversi ke HAZ terverifikasi terhadap rujukan WHO | ☐ | CV-09 | §3.3 | |
 | C-A14 | Selective prediction: coverage + MAE pada citra yang diterima | ☐ | CV-11 | §4.1, §4.3 | |
+| C-A15 | Estimasi panjang tanpa referensi (DEC-016, bukan pengukuran) | ☐ | DEC-016 | Future Work | — |
 | C-A10 | MAE < 1 cm pada balita nyata | **No** | None | Future Work | — |
 | C-A11 | Fine-tuning pose khusus anatomi balita | **No** | None | Future Work | — |
 | C-A12 | Koreksi parallax penuh | **No** | None | Future Work | — |

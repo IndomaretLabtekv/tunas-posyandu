@@ -23,7 +23,7 @@ Tunas menggabungkan dua kanal menjadi satu daftar tindakan:
 
 | Kanal | Fungsi |
 |---|---|
-| **Visual** | Foto balita di atas alas ber-marker ArUco → quality control → rektifikasi perspektif → estimasi panjang badan → konversi ke HAZ (standar WHO) |
+| **Visual** | Foto balita: dengan alas polos berukuran diketahui → pengukuran presisi + HAZ; TANPA alas → estimasi panjang (DEC-016, band ketidakpastian jujur) |
 | **Tabular** | Riwayat kunjungan Posyandu → fitur lintasan (growth velocity, tren Z-score, gagal tumbuh berulang) + faktor kontekstual → model risiko **prospektif** |
 | **Keluaran** | Dashboard petugas gizi: daftar balita terurut prioritas + atribusi SHAP per anak + fallback input manual |
 
@@ -55,7 +55,7 @@ tunas-posyandu/
 │   ├── PAPER_OUTLINE.md   # kerangka paper ↔ rubrik
 │   ├── VIDEO_SCRIPT.md    # skrip video demo 3–5 menit
 │   └── PLAN.md            # timeline & pembagian kerja
-├── cv/                    # ArUco, quality control, segmentasi, geometri
+├── cv/                    # deteksi alas (markerless), QC, segmentasi, geometri
 ├── tabular/               # feature engineering, WHO LMS, model risiko, SHAP
 ├── api/                   # FastAPI backend
 ├── web/                   # frontend responsif (mode kader & petugas gizi)

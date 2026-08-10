@@ -6,3 +6,13 @@ scikit-learn==1.9.0
 lightgbm==4.7.0
 shap==0.52.0
 joblib==1.5.3
+# Kanal visual (DEC-014)
+opencv-contrib-python==5.0.0.93
+transformers>=4.40
+timm>=1.0
+einops>=0.8
+huggingface_hub>=0.24
+kornia>=0.7   # dipakai kode remote BiRefNet_dynamic (HF)
+# torch>=2.0 wajib untuk BiRefNet_dynamic & ViTPose (jalur model);
+# instal sesuai platform: pip install torch (CPU) atau versi CUDA resmi.
+pillow>=9.0   # EXIF focal (estimate mode, DEC-016)

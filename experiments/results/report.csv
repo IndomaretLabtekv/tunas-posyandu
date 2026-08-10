@@ -1,0 +1,20 @@
+group,image,det_nocolor,det_color,det_px_ratio,reason,length_cm,confidence,model,latency_ms,est_cm,est_method,est_band
+babies,baby-01,False,False,,alas tidak terdeteksi,,,color,15.3,54.4,head_prior,8.2
+babies,baby-02,False,False,,alas tidak terdeteksi,,,color,12.6,50.7,perspective_prior,15.2
+babies,baby-03,False,False,,alas tidak terdeteksi,,,color,4.5,98.4,perspective_prior,29.5
+babies,baby-04,False,False,,alas tidak terdeteksi,,,color,14.5,42.4,perspective_prior,12.7
+babies,baby-05,False,False,,alas tidak terdeteksi,,,color,19.2,59.7,perspective_prior,17.9
+babies,baby-06,False,False,,alas tidak terdeteksi,,,color,13.3,54.3,perspective_prior,16.3
+babies,baby-07,False,False,,alas tidak terdeteksi,,,color,15.0,78.3,perspective_prior,23.5
+babies,baby-08,False,False,,alas tidak terdeteksi,,,color,11.4,82.3,perspective_prior,24.7
+babies,baby-09,False,False,,alas tidak terdeteksi,,,color,16.5,78.7,perspective_prior,23.6
+babies,baby-10,False,False,,alas tidak terdeteksi,,,color,16.1,52.0,perspective_prior,15.6
+babies,baby-11,False,False,,alas tidak terdeteksi,,,color,25.8,52.7,perspective_prior,15.8
+mats,Coir_mat2.jpg,False,False,,alas tidak terdeteksi,,,color,20.4,26.3,perspective_prior,7.9
+mats,Cotton_Yoga_Mats.png,False,False,,alas tidak terdeteksi,,,color,14.2,42.1,perspective_prior,12.6
+mats,Gaim_Yoga_Mat_1_2019-05-15.jpg,False,True,2.83,subjek terlalu dekat tepi alas,,,color,93.1,,,
+mats,Gaim_Yoga_Mat_6_2019-05-15.jpg,False,False,,alas tidak terdeteksi,,,color,19.6,107.7,perspective_prior,32.3
+mats,Oakley_yoga_mat.jpg,False,False,,alas tidak terdeteksi,,,color,14.9,43.0,head_prior,6.5
+mats,Yoga_Mat_Made_of_Carpet_Underlay.jpg,False,False,,alas tidak terdeteksi,,,color,10.2,36.0,perspective_prior,10.8
+mats,Yoga_mat.jpg,False,False,,alas tidak terdeteksi,,,color,13.9,43.8,perspective_prior,13.1
+mats,Yoga_mats.png,False,False,,alas tidak terdeteksi,,,color,12.3,47.2,head_prior,7.1

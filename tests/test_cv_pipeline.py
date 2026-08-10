@@ -1,0 +1,177 @@
+"""Test pipeline end-to-end (V6) pada citra alas sintetis, backend warna."""
+
+import cv2
+import numpy as np
+import pytest
+
+from cv.aruco import detect_markers
+from cv.pipeline import measure_length
+from cv.quality import ImageQC, blur_variance
+from cv.segment import ColorSegmenter
+
+from _cv_synth import SPEC, synth_mat_with_body
+
+
+def _pipeline_kwargs(img):
+    """ImageQC dengan ambang blur relatif terhadap citra uji (bukan absolut)."""
+    sharp = blur_variance(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
+    return {"image_qc": ImageQC(min_blur_var=max(1.0, sharp / 2))}
+
+
+def test_pipeline_mengukur_panjang_badan_elips():
+    img, _, _, body_cm = synth_mat_with_body(body_axes_cm=(45.0, 12.0))
+    res = measure_length(img, SPEC, segmenter=ColorSegmenter(), detector=detect_markers,
+              **_pipeline_kwargs(img))
+    assert res.ok, res.qc_reasons
+    assert res.length_cm == pytest.approx(body_cm, abs=1.5)
+    assert res.model == "color"
+    assert 0.0 <= res.confidence <= 1.0
+    assert res.endpoints_px is not None and len(res.endpoints_px) == 2
+    assert res.haz is None  # tanpa haz_fn
+
+
+def test_pipeline_menghitung_haz_bila_disediakan():
+    img, _, _, _ = synth_mat_with_body()
+    res = measure_length(
+        img, SPEC, segmenter=ColorSegmenter(), detector=detect_markers,
+        **_pipeline_kwargs(img), sex="M", age_days=300,
+        haz_fn=lambda length_cm, sex, age_days: round(length_cm / 100, 3),
+    )
+    assert res.ok and res.haz is not None
+
+
+def test_pipeline_menolak_citra_buram():
+    img, _, _, _ = synth_mat_with_body()
+    sharp = blur_variance(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
+    blurred = cv2.GaussianBlur(img, (15, 15), 0)
+    res = measure_length(blurred, SPEC, segmenter=ColorSegmenter(),
+                         detector=detect_markers,
+                         image_qc=ImageQC(min_blur_var=sharp / 2))
+    assert not res.ok
+
+
+def test_pipeline_menolak_citra_tanpa_marker():
+    img, _, _, _ = synth_mat_with_body()
+    img[:, :] = 200  # hapus marker
+    res = measure_length(img, SPEC, segmenter=ColorSegmenter(), detector=detect_markers,
+              **_pipeline_kwargs(img))
+    assert not res.ok
+
+
+def test_postur_menurunkan_confidence_tanpa_menolak():
+    # Badan gempal (aspect < 3): postur menandai, tetapi pengukuran tetap keluar.
+    img, _, _, _ = synth_mat_with_body(body_axes_cm=(45.0, 22.0))
+    res = measure_length(img, SPEC, segmenter=ColorSegmenter(), detector=detect_markers,
+                         **_pipeline_kwargs(img))
+    assert res.ok
+    assert res.confidence < 1.0
+    assert any("aspek" in r or "pendek" in r or "melengkung" in r or
+               "tungkai" in r or "tidak stabil" in r for r in res.qc_reasons)
+
+
+def test_tubuh_terpotong_bingkai_ditolak():
+    from _cv_synth import synth_mat
+
+    img, ppc, box = synth_mat()  # tanpa badan
+    x0, y0, x1, y1 = box
+    # Badan elips menembus tepi atas alas -> terpotong di citra teregistrasi.
+    img2 = img.copy()
+    cx, cy = (x0 + x1) // 2, y0 + int(2 * ppc)
+    cv2.ellipse(img2, (cx, cy), (int(20 * ppc), int(6 * ppc)), 0, 0, 360, (30, 120, 200), -1)
+    res = measure_length(img2, SPEC, segmenter=ColorSegmenter(), detector=detect_markers,
+                         **_pipeline_kwargs(img2))
+    assert not res.ok
+    assert any("dekat tepi" in r or "terpotong" in r for r in res.qc_reasons)
+
+
+def test_fallback_segmenter_otomatis_saat_primary_gagal():
+    from cv.segment import BaseSegmenter, SegmentResult
+
+    from _cv_synth import synth_plain_mat_with_body
+
+    class Gagal(BaseSegmenter):
+        model_name = "gagal-sengaja"
+
+        def segment(self, image_bgr):
+            return SegmentResult(mask=np.zeros(image_bgr.shape[:2], bool),
+                                 model=self.model_name, latency_s=0.0,
+                                 ok=False, reason="model tidak tersedia: x")
+
+    # Tanpa fallback eksplisit: pipeline harus otomatis memakai baseline
+    # warna (DEC-014) -- citra alas polos sintetis.
+    img, _, _, body_cm = synth_plain_mat_with_body()
+    res = measure_length(img, SPEC, segmenter=Gagal(),
+                         image_qc=ImageQC(min_blur_var=1.0))
+    assert res.ok, res.qc_reasons
+    assert res.model == "color"
+    assert res.length_cm == pytest.approx(body_cm, abs=1.5)
+    assert any("fallback" in r for r in res.qc_reasons)
+
+
+def test_fallback_tidak_dipakai_saat_segmenter_sama():
+    from cv.segment import SegmentResult
+
+    from _cv_synth import synth_plain_mat_with_body
+
+    # Primary = ColorSegmenter (backend "color") yang gagal: fallback default
+    # juga "color" -> guard backend-sama melarang fallback -> tetap gagal.
+    class GagalWarna(ColorSegmenter):
+        def segment(self, image_bgr):
+            return SegmentResult(mask=np.zeros(image_bgr.shape[:2], bool),
+                                 model=self.model_name, latency_s=0.0,
+                                 ok=False, reason="warna alas tidak ditemukan")
+
+    img, _, _, _ = synth_plain_mat_with_body()
+    res = measure_length(img, SPEC, segmenter=GagalWarna(mat_color=(1, 1, 1)),
+                         image_qc=ImageQC(min_blur_var=1.0))
+    assert not res.ok
+    assert any("warna alas" in r for r in res.qc_reasons)
+
+
+def test_mask_kosong_ok_true_tidak_crash():
+    # Segmenter kustom ok=True dengan mask kosong -> penolakan terkontrol,
+    # bukan crash di .min() (regresi reviewer round-6).
+    from cv.segment import SegmentResult
+
+    from _cv_synth import synth_plain_mat_with_body
+
+    class KosongTapiOk(ColorSegmenter):
+        def segment(self, image_bgr):
+            return SegmentResult(mask=np.zeros(image_bgr.shape[:2], bool),
+                                 model=self.model_name, latency_s=0.0, ok=True)
+
+    img, _, _, _ = synth_plain_mat_with_body()
+    res = measure_length(img, SPEC, segmenter=KosongTapiOk(),
+                         fallback_segmenter=KosongTapiOk(),
+                         image_qc=ImageQC(min_blur_var=1.0))
+    assert not res.ok and res.qc_reasons
+
+
+def test_alas_tanpa_badan_ditolak():
+    """Mat kosong: bayangan/tekstur tepi bukan subjek sah (regresi round-4)."""
+    from _cv_synth import synth_plain_mat
+
+    img, _, box = synth_plain_mat()
+    x0, y0, x1, y1 = box
+    # Simulasikan "bayangan": strip sewarna-badan menempel tepi atas alas.
+    img2 = img.copy()
+    cv2.rectangle(img2, (x0 + 10, y0 - 4), (x1 - 10, y0 + 14), (30, 120, 200), -1)
+    res = measure_length(img2, SPEC, segmenter=ColorSegmenter(),
+                         image_qc=ImageQC(min_blur_var=1.0))
+    assert not res.ok, "bayangan tepi tidak boleh terukur sebagai badan"
+    assert any("dekat tepi" in r for r in res.qc_reasons)
+
+
+def test_logo_tengah_di_alas_kosong_ditolak():
+    """Logo/tekstur kecil di tengah alas kosong bukan badan (regresi r5)."""
+    from _cv_synth import synth_plain_mat
+
+    img, ppc, box = synth_plain_mat()
+    x0, y0, x1, y1 = box
+    img2 = img.copy()
+    cx, cy = (x0 + x1) // 2, (y0 + y1) // 2
+    cv2.circle(img2, (cx, cy), int(4 * ppc), (30, 120, 200), -1)  # logo 8cm
+    res = measure_length(img2, SPEC, segmenter=ColorSegmenter(),
+                         image_qc=ImageQC(min_blur_var=1.0))
+    assert not res.ok, "logo tengah tidak boleh terukur sebagai badan"
+    assert any("terlalu kecil" in r for r in res.qc_reasons)

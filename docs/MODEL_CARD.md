@@ -7,14 +7,15 @@ Dua komponen model dalam Tunas didokumentasikan terpisah karena sifat, evaluasi,
 ## Bagian 1 — Pipeline estimasi antropometri (kanal visual)
 
 ### Ringkasan
-Pipeline geometri, bukan model tunggal: deteksi marker ArUco → rektifikasi bidang alas → quality control → segmentasi subjek → ekstraksi endpoint sepanjang sumbu tubuh → konversi ke sentimeter → konversi ke HAZ (LMS WHO). QC postur berbasis geometri siluet merupakan jalur utama; model pose pretrained bersifat **auxiliary dan bersyarat** — hanya masuk produk bila lolos CV-06 (DEC-006). Pose tidak pernah menjadi sumber angka ukur.
+Dua jalur: (a) **mode akurat** (alas polos berukuran diketahui, DEC-015): deteksi 4 sudut alas → rektifikasi → QC → segmentasi subjek → endpoint → sentimeter → HAZ (LMS WHO); (b) **mode ESTIMASI** (tanpa alas, DEC-016 — alur utama "jepret langsung"): prior kepala/perspektif dengan band ketidakpastian, bukan pengukuran. QC postur berbasis geometri siluet merupakan jalur utama; model pose pretrained bersifat **auxiliary dan bersyarat** — hanya masuk produk bila lolos CV-06 (DEC-006). Pose tidak pernah menjadi sumber angka ukur.
 
 ### Penggunaan yang dimaksudkan
 Membantu kader Posyandu memperoleh estimasi panjang badan telentang pada kondisi tangkap yang terkendali, sebagai pendamping (bukan pengganti) pengukuran manual.
 
 ### Penggunaan di luar cakupan
 - Pengukuran tinggi badan berdiri
-- Pengukuran tanpa alas ber-marker
+- Pengukuran tanpa alas polos berukuran diketahui (mode ESTIMASI DEC-016
+  memberi perkiraan kasar ber-band, bukan pengukuran)
 - Pengukuran dari citra yang gagal quality control
 - Diagnosis status gizi tanpa penilaian tenaga kesehatan
 
@@ -34,7 +35,7 @@ Membantu kader Posyandu memperoleh estimasi panjang badan telentang pada kondisi
 | MAPE (%) | — | — |
 | Galat endpoint kepala (cm) | — | — |
 | Galat endpoint kaki (cm) | — | — |
-| Detection rate marker (%) | — | — |
+| Detection rate sudut alas (%) | — | — |
 | Reject rate QC (%) | — | — |
 | Latency (ms, CPU) | — | — |
 | **Coverage** (% citra yang diterima QC) | — | — |
@@ -45,11 +46,11 @@ Angka MAE tidak pernah dilaporkan sendirian: sistem menerapkan *selective predic
 ### Failure mode yang diketahui
 | Failure | Penyebab | Penanganan sistem |
 |---|---|---|
-| Marker tidak terbaca | Pencahayaan buruk, marker terlipat/kotor, marker terpotong | Citra ditolak, kader diminta ulang |
+| Sudut alas tidak terdeteksi | Pencahayaan buruk, alas kusut/terlipat, warna lantai mirip alas | Pengukuran ditolak; mode ESTIMASI (DEC-016) memberi perkiraan kasar + band; kader dapat mengukur manual |
 | Kamera terlalu miring | Pengambilan tergesa | Geometry QC menolak; UI memberi panduan |
-| Galat sisa akibat offset bidang tubuh | Tubuh tidak tepat pada bidang marker | Tidak dikoreksi penuh; dibatasi lewat protokol jarak & sudut; galat sisa dilaporkan |
+| Galat sisa akibat offset bidang tubuh | Tubuh tidak tepat pada bidang alas | Tidak dikoreksi penuh; dibatasi lewat protokol jarak & sudut; galat sisa dilaporkan |
 | Subjek tidak lurus / tungkai tertekuk | Balita bergerak | QC siluet (kelengkungan sumbu, deviasi) menandai; pose QC menambah sinyal bila lolos CV-06; skor kepercayaan turun |
-| Titik ukur berada di atas bidang marker | Geometri (parallax) | Tidak dikoreksi penuh; dibatasi lewat protokol tinggi kamera & posisi bingkai hasil CV-00 (DEC-011) |
+| Titik ukur berada di atas bidang alas | Geometri (parallax) | Tidak dikoreksi penuh; dibatasi lewat protokol tinggi kamera & posisi bingkai hasil CV-00 (DEC-011) |
 | Oklusi (selimut, pakaian tebal, tangan pengasuh) | Kondisi lapangan | Segmentasi tidak stabil → estimasi ditandai berkepercayaan rendah |
 | Alas berwarna tidak seragam | Alas tidak standar | Segmentasi memburuk; QC menolak |
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import json
+import secrets
 from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import select
@@ -47,9 +48,12 @@ def _ensure_user(conn, *, name: str, role: str, password: str, scope_key: str) -
     )
 
 
-DEMO_CHILDREN = (
+DEMO_MOTHER_CHILDREN = (
     ("Bayi Demo", "F", 180, "normal", []),
     ("Alya", "F", 245, "normal", []),
+)
+
+COMMUNITY_CHILDREN = (
     ("Bima", "M", 310, "needs_review", ["low_confidence"]),
     ("Citra", "F", 420, "needs_review", ["growth_signal"]),
     ("Daffa", "M", 520, "assigned", ["estimate_mode"]),
@@ -62,25 +66,52 @@ DEMO_CHILDREN = (
     ("Kayla", "F", 365, "resolved", ["low_confidence"]),
 )
 
+DEMO_CHILDREN = DEMO_MOTHER_CHILDREN + COMMUNITY_CHILDREN
+
 
 def _seed_children(conn, *, user_ids: dict[str, int], scope_key: str) -> None:
     existing = {
-        child["name"]: int(child["child_id"])
-        for child in store.list_owned_children(conn, user_ids["mother"])
+        row.name: {"child_id": int(row.child_id), "mother_id": int(row.mother_id)}
+        for row in conn.execute(
+            select(
+                store.children_table.c.id.label("child_id"),
+                store.children_table.c.name,
+                store.child_profiles_table.c.mother_id,
+            )
+            .join(
+                store.child_profiles_table,
+                store.child_profiles_table.c.child_id == store.children_table.c.id,
+            )
+            .where(store.child_profiles_table.c.scope_key == scope_key)
+        )
     }
     now = datetime.now(timezone.utc).replace(microsecond=0)
 
     for index, (name, sex, age_days, target_status, reasons) in enumerate(DEMO_CHILDREN):
-        child_id = existing.get(name)
-        if child_id is None:
+        mother_id = (
+            user_ids["mother"]
+            if index < len(DEMO_MOTHER_CHILDREN)
+            else user_ids["community_mother"]
+        )
+        child = existing.get(name)
+        if child is None:
             child_id = store.create_owned_child(
                 conn,
                 name=name,
                 sex=sex,
-                mother_id=user_ids["mother"],
+                mother_id=mother_id,
                 birth_date=(date.today() - timedelta(days=age_days)).isoformat(),
                 scope_key=scope_key,
             )
+        else:
+            child_id = child["child_id"]
+            if child["mother_id"] != mother_id:
+                conn.execute(
+                    store.child_profiles_table.update()
+                    .where(store.child_profiles_table.c.child_id == child_id)
+                    .values(mother_id=mother_id)
+                )
+                conn.commit()
         if store.list_growth_checks(conn, child_id):
             continue
 
@@ -90,7 +121,7 @@ def _seed_children(conn, *, user_ids: dict[str, int], scope_key: str) -> None:
         store.record_growth_check(
             conn,
             child_id=child_id,
-            submitted_by=user_ids["mother"],
+            submitted_by=mother_id,
             source="mother",
             age_days=age_days - 30,
             weight_kg=round(base_weight - 0.3, 1),
@@ -106,7 +137,7 @@ def _seed_children(conn, *, user_ids: dict[str, int], scope_key: str) -> None:
         check_id = store.record_growth_check(
             conn,
             child_id=child_id,
-            submitted_by=user_ids["mother"],
+            submitted_by=mother_id,
             source="mother",
             age_days=age_days,
             weight_kg=round(base_weight, 1),
@@ -189,13 +220,20 @@ def main() -> None:
             )
             for name, role in accounts
         }
+        user_ids["community_mother"] = _ensure_user(
+            conn,
+            name="Ibu Komunitas Demo",
+            role="mother",
+            password=secrets.token_urlsafe(32),
+            scope_key=scope_key,
+        )
 
         _seed_children(conn, user_ids=user_ids, scope_key=scope_key)
     finally:
         conn.close()
 
     print("Demo Tunas siap")
-    print(f"Data: {len(DEMO_CHILDREN)} anak / 10 kasus tindak lanjut")
+    print(f"Data: {len(DEMO_MOTHER_CHILDREN)} anak Ibu Demo / 10 kasus tindak lanjut")
     print(f"Scope: {scope_key}")
     for name, role in accounts:
         print(f"{role}: {name} / {password}")

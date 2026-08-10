@@ -87,8 +87,9 @@ Buka `http://localhost:3000`. Backend tersedia di `http://localhost:8000/docs`.
 
 ### Alur demo tiga peran
 
-`make seed-demo` membuat satu akun ibu, kader, dan ahli gizi pada scope yang sama,
-serta 12 profil anak, 28 pemeriksaan, dan 10 kasus dengan status workflow beragam.
+`make seed-demo` membuat tiga akun login demo pada scope yang sama. Ibu Demo memiliki
+2 anak, sedangkan 10 anak komunitas mengisi dashboard Kader dan Ahli Gizi dengan kasus
+berstatus workflow beragam.
 Perintah ini idempotent sehingga aman dijalankan ulang. Kredensial dibaca dari `DEMO_PASSWORD`
 dan dicetak oleh seed command, bukan ditanam sebagai secret produksi.
 

@@ -8,6 +8,7 @@ results/tabular/final/runs/
 .env
 *.tmp
 *.log
+data/tunas.db
 
 # Output eksperimen kecil di results/ SENGAJA di-commit — itu jejak angka di paper.
 # Kalau ada file besar, abaikan per-nama, jangan pola *.csv.

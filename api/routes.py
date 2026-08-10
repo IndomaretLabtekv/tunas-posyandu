@@ -14,7 +14,11 @@ from api.features import build_model_frame, latest_visit_index_per_child
 from api.model import ModelNotLoadedError, explain_row, predict_scores, rank_scores
 from api.schemas import Attribution, ChildDetail, MeasurementResponse, PriorityChild, PriorityResponse, VisitOut
 from cv.pipeline import LOW_CONFIDENCE
-from tabular.explain import DISCLAIMER
+
+DISCLAIMER = (
+    "Faktor global menunjukkan fitur yang paling sering membantu model membedakan prioritas "
+    "pada data training, bukan penyebab kondisi anak atau diagnosis medis."
+)
 
 router = APIRouter()
 
@@ -120,7 +124,7 @@ async def get_priority() -> PriorityResponse:
 
 @router.get("/children/{child_id}", response_model=ChildDetail)
 async def get_child_detail(child_id: int) -> ChildDetail:
-    """Detail satu anak: riwayat kunjungan, skor risiko, dan SHAP."""
+    """Detail satu anak: riwayat, skor risiko, dan faktor penting global."""
     conn = store.get_conn()
     try:
         store.init_db(conn)

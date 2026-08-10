@@ -17,7 +17,7 @@ def client(monkeypatch):
     with tempfile.TemporaryDirectory() as tmp:
         db_path = Path(tmp) / "tunas.db"
         monkeypatch.setenv("DATABASE_URL", f"sqlite+pysqlite:///{db_path}")
-        monkeypatch.setenv("MODEL_PATH", "results/tabular/final/primary_model.joblib")
+        monkeypatch.setenv("MODEL_PATH", "results/tabular/final/primary_model.json")
         # Clear model cache so each test uses the current MODEL_PATH.
         from api.model import _load_artifact_cached
         _load_artifact_cached.cache_clear()
@@ -98,7 +98,7 @@ def test_priority_empty_database(client):
     assert resp.json() == {"children": [], "total": 0}
 
 
-def test_child_detail_returns_history_and_shap(client):
+def test_child_detail_returns_history_and_global_importance(client):
     c1, _ = _seed_child_and_visits(client)
     resp = client.get(f"/children/{c1}")
     assert resp.status_code == 200
@@ -106,9 +106,10 @@ def test_child_detail_returns_history_and_shap(client):
     assert data["child_id"] == c1
     assert data["name"] == "Ani"
     assert data["sex"] == "F"
-    assert data["disclaimer"]
+    assert "global" in data["disclaimer"].lower()
     assert len(data["visits"]) == 15
     assert data["top_factors"]
+    assert set(data["top_factors"][0]) == {"feature", "label", "value", "importance"}
 
 
 def test_child_detail_not_found(client):

@@ -19,13 +19,12 @@ class MeasurementResponse(BaseModel):
 
 
 class Attribution(BaseModel):
-    """Satu faktor SHAP."""
+    """Satu faktor penting global dari model."""
 
     feature: str
     label: str
     value: float | None
-    shap_value: float
-    direction: str
+    importance: float
 
 
 class VisitOut(BaseModel):

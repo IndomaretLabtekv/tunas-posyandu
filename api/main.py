@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api import store
 from api.routes import router
+from api.workflow_routes import router as workflow_router
 
 
 @asynccontextmanager
@@ -31,3 +32,4 @@ app.add_middleware(
 )
 
 app.include_router(router)
+app.include_router(workflow_router, prefix="/api")

@@ -13,6 +13,7 @@ from sqlalchemy import select
 from api import auth, store
 from api.cv_service import process_image, read_upload_limited
 from api.dependencies import AuthenticatedUser, assert_child_access, require_roles
+from api.risk_service import score_growth_history
 from api.workflow import case_priority, case_sort_key, classify_screening, monthly_due
 from api.workflow_schemas import (
     AuthResponse,
@@ -345,7 +346,7 @@ def _as_datetime(value: str | datetime) -> datetime:
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
 
 
-def _case_summary(case: dict, *, now: datetime) -> CaseSummaryOut:
+def _case_summary(case: dict, *, now: datetime, risk: dict) -> CaseSummaryOut:
     submitted_at = _as_datetime(case["growth_measured_at"])
     next_due_at = _as_datetime(case["growth_next_due_at"])
     return CaseSummaryOut(
@@ -367,6 +368,18 @@ def _case_summary(case: dict, *, now: datetime) -> CaseSummaryOut:
         next_due_at=next_due_at.isoformat(),
         days_since_submission=max(0, (now - submitted_at).days),
         overdue=monthly_due(last_check_at=submitted_at, now=now),
+        risk_score=risk["score"],
+        risk_factors=risk["factors"],
+    )
+
+
+def _case_risk(conn, case: dict) -> dict:
+    child = store.get_child_profile(conn, int(case["child_id"]))
+    if child is None:
+        raise ValueError("profil anak tidak ditemukan")
+    return score_growth_history(
+        child=child,
+        checks=store.list_growth_checks(conn, int(case["child_id"])),
     )
 
 
@@ -385,7 +398,7 @@ def _case_action_out(action: dict) -> CaseActionOut:
 
 def _case_detail(conn, case: dict, *, now: datetime) -> CaseDetailOut:
     return CaseDetailOut(
-        case=_case_summary(case, now=now),
+        case=_case_summary(case, now=now, risk=_case_risk(conn, case)),
         checks=[
             _check_out(check)
             for check in store.list_growth_checks(conn, int(case["child_id"]))
@@ -430,17 +443,20 @@ def _list_role_cases(user: AuthenticatedUser) -> list[CaseSummaryOut]:
     try:
         store.init_db(conn)
         summaries = [
-            _case_summary(case, now=now)
+            _case_summary(case, now=now, risk=_case_risk(conn, case))
             for case in store.list_cases(conn, scope_key=user.scope_key)
         ]
         summaries.sort(
-            key=lambda item: case_sort_key(
-                {
-                    "id": item.case_id,
-                    "priority": item.priority,
-                    "overdue": item.overdue,
-                    "created_at": item.submitted_at,
-                }
+            key=lambda item: (
+                -item.risk_score,
+                *case_sort_key(
+                    {
+                        "id": item.case_id,
+                        "priority": item.priority,
+                        "overdue": item.overdue,
+                        "created_at": item.submitted_at,
+                    }
+                ),
             )
         )
         return summaries

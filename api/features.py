@@ -64,7 +64,7 @@ def visits_to_dataframe(visits: list[dict[str, Any]]) -> pd.DataFrame:
             "haz": v["haz"] if v.get("haz") is not None else np.nan,
             "measured_by_cv": _visit_row_to_measured_by_cv(v.get("mode", "")),
             # ponytail: kolom kontekstual tidak dikumpulkan MVP -> NaN
-            "weight_kg": np.nan,
+            "weight_kg": v.get("weight_kg", np.nan),
             "ses_index": np.nan,
             "birth_weight_kg": np.nan,
             "immunization_on_schedule": np.nan,

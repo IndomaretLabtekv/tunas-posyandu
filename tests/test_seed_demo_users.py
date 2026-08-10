@@ -5,6 +5,8 @@ from collections import Counter
 from sqlalchemy import func, select
 
 from api import store
+from api.dependencies import AuthenticatedUser
+from api.workflow_routes import _list_role_cases
 from scripts.seed_demo_users import main
 
 
@@ -40,6 +42,9 @@ def test_demo_seed_populates_workflow_once(tmp_path, monkeypatch):
             .select_from(store.child_profiles_table)
             .where(store.child_profiles_table.c.mother_id == community_mother_id)
         ) == 10
+        kader_id = conn.scalar(
+            select(store.users_table.c.id).where(store.users_table.c.name == "Kader Demo")
+        )
         cases = store.list_cases(conn, scope_key="posyandu-demo")
     finally:
         conn.close()
@@ -52,3 +57,11 @@ def test_demo_seed_populates_workflow_once(tmp_path, monkeypatch):
         "referred": 1,
         "resolved": 1,
     }
+
+    summaries = _list_role_cases(
+        AuthenticatedUser(kader_id, "kader", "posyandu-demo")
+    )
+    scores = [summary.risk_score for summary in summaries]
+    assert all(score is not None and 0.0 <= score <= 1.0 for score in scores)
+    assert scores == sorted(scores, reverse=True)
+    assert all(summary.risk_factors for summary in summaries)

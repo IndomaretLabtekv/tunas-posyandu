@@ -83,6 +83,13 @@ class MotherTimelineOut(BaseModel):
     checks: list[GrowthCheckOut]
 
 
+class RiskFactorOut(BaseModel):
+    feature: str
+    label: str
+    value: float | None
+    importance: float
+
+
 class CaseSummaryOut(BaseModel):
     case_id: int
     child_id: int
@@ -102,6 +109,8 @@ class CaseSummaryOut(BaseModel):
     next_due_at: str
     days_since_submission: int
     overdue: bool
+    risk_score: float
+    risk_factors: list[RiskFactorOut]
 
 
 class CaseActionOut(BaseModel):

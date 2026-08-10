@@ -73,8 +73,6 @@ tunas-posyandu/
 
 ## 5. Setup
 
-> Diisi saat implementasi berjalan. Target: seseorang yang belum pernah melihat repo ini bisa menjalankan produk end-to-end dalam < 10 menit.
-
 ### Prasyarat
 
 - Python 3.11+
@@ -95,19 +93,32 @@ pip install -r requirements.txt
 cd web && npm install && cd ..
 ```
 
-### Menjalankan (selama pengembangan)
+### Menjalankan lokal
 
 ```bash
 # Terminal 1 — backend
-uvicorn api.main:app --reload --port 8000
+make run-api
 
 # Terminal 2 — frontend
-cd web && npm run dev
+make run-web
 ```
 
-Buka `http://localhost:3000`. Salin `.env.example` menjadi `.env` bila perlu mengubah konfigurasi.
+Buka `http://localhost:3000`.
 
-> Target sebelum submission: menyediakan satu perintah `make demo` yang menjalankan seluruh stack. Perintah itu **belum tersedia** dan tidak dicantumkan sampai benar-benar diuji.
+Konfigurasi opsional via environment variable:
+
+- `DB_PATH` — lokasi SQLite (default `./data/tunas.db`)
+- `MODEL_PATH` — lokasi artefak model tabular (default `results/tabular/final/primary_model.joblib`)
+- `NEXT_PUBLIC_API_URL` — base URL backend untuk frontend (default `http://localhost:8000`)
+
+### Perintah Makefile
+
+```bash
+make test        # jalankan seluruh test suite
+make run-api     # jalankan backend uvicorn
+make run-web     # jalankan frontend Next.js dev
+make build-web   # build frontend untuk production
+```
 
 Versi seluruh dependency di-pin pada `requirements.txt` dan `package-lock.json`.
 

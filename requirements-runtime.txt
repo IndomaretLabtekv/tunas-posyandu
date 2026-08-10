@@ -1,0 +1,15 @@
+numpy==2.4.6
+pandas==3.0.5
+scikit-learn==1.9.0
+lightgbm==4.7.0
+shap==0.52.0
+joblib==1.5.3
+opencv-contrib-python-headless==5.0.0.93
+pillow>=9.0
+fastapi==0.115.6
+uvicorn==0.34.0
+python-multipart==0.0.20
+sqlalchemy==2.0.51
+psycopg2-binary==2.9.10
+PyJWT==2.10.1
+pwdlib[argon2]==0.2.1

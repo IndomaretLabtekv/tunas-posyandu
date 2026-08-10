@@ -121,7 +121,10 @@ def measure_or_estimate(
     if mat_spec is None:
         from cv.mat_corners import PRODUCT_MAT_SPEC
         mat_spec = PRODUCT_MAT_SPEC
-    m = measure_length(image, mat_spec, **measure_kwargs)
+    try:
+        m = measure_length(image, mat_spec, **measure_kwargs)
+    except Exception as e:  # noqa: BLE001 -- gambar rusak: jatuh ke estimasi
+        m = MeasurementResult(ok=False, qc_reasons=[f"pengukuran error: {e}"])
     if m.ok:
         return ProductResult(mode="measurement", measurement=m)
 

@@ -2,7 +2,7 @@
 
 Jalankan (env datsci aktif):
     python scripts/demo_cv.py                    # alas polos sintetis (markerless)
-    python scripts/demo_cv.py <foto.jpg>         # foto asli (harus ada alas polos)
+    python scripts/demo_cv.py <foto.jpg>         # foto asli: alas -> ukur; tanpa alas -> estimasi
 
 Keluaran: results/cv/demo_overlay.png -- citra masukan + 4 sudut alas
 terdeteksi (hijau), mask segmentasi (kuning), endpoint kepala/tumit (merah),

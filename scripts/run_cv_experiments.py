@@ -42,7 +42,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # repo root
 
 from cv.aruco import MatSpec, draw_overlay, rectify
-from cv.estimate import estimate_length_no_reference, focal_px_from_exif
+from cv.estimate import measure_or_estimate
 from cv.mat_corners import PRODUCT_MAT_COLOR, detect_mat_corners
 from cv.pipeline import measure_length
 from cv.quality import ImageQC
@@ -129,13 +129,14 @@ def main() -> None:
         det_prod = detect_mat_corners(img, spec, mat_color=mat_color)
 
         t0 = time.perf_counter()
-        res = measure_length(
-            img, spec,
+        pr = measure_or_estimate(
+            img, mat_spec=spec, image_path=path,
             segmenter=ColorSegmenter(mat_color=mat_color),
             image_qc=ImageQC(),
             detector=lambda im, sp: detect_mat_corners(im, sp, mat_color=mat_color),
         )
         latency_ms = round((time.perf_counter() - t0) * 1000, 1)
+        res, estimate = pr.measurement, pr.estimate
 
         # Rasio sisi quad di RUANG PIKsel (independen dari spec -- bukan
         # tautologi homografi). Yoga mat asli ~3.0.
@@ -145,10 +146,6 @@ def main() -> None:
             sides = sorted(np.linalg.norm(p[(i + 1) % 4] - p[i]) for i in range(4))
             det_px_ratio = round(sides[2] / max(1.0, sides[0]), 2)
 
-        estimate = None
-        if not res.ok and "alas tidak terdeteksi" in "; ".join(res.qc_reasons):
-            estimate = estimate_length_no_reference(
-                img, focal_px=focal_px_from_exif(path, img.shape[1]))
 
         overlay = draw_overlay(img, det_prod if det_prod.ok else det_plain)
         if res.ok:
@@ -185,9 +182,9 @@ def main() -> None:
             "est_band": round(estimate.length_cm * estimate.uncertainty_rel, 1)
                         if estimate and estimate.ok else "",
         })
-        if res.ok:
+        if pr.mode == "measurement":
             status = f"{res.length_cm} cm"
-        elif estimate is not None and estimate.ok:
+        elif pr.mode == "estimate":
             status = f"ESTIMASI ~{estimate.length_cm} cm ({estimate.method})"
         else:
             status = f"DITOLAK ({res.qc_reasons})"

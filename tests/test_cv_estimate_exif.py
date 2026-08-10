@@ -58,4 +58,6 @@ def test_measure_or_estimate_dua_mode():
     cv2.circle(img2, (200, 200), 40, (140, 170, 220), -1)    # "kepala"
     cv2.ellipse(img2, (320, 220), (90, 30), 0, 0, 360, (140, 170, 220), -1)
     pr2 = measure_or_estimate(img2)
-    assert pr2.mode in ("measurement", "estimate"), "foto harus menghasilkan angka"
+    assert pr2.mode == "estimate", "tanpa alas harus jatuh ke estimasi"
+    assert pr2.estimate.ok and pr2.length_cm is not None
+    assert any("pengukuran gagal" in r for r in pr2.estimate.reasons)

@@ -16,3 +16,7 @@ kornia>=0.7   # dipakai kode remote BiRefNet_dynamic (HF)
 # torch>=2.0 wajib untuk BiRefNet_dynamic & ViTPose (jalur model);
 # instal sesuai platform: pip install torch (CPU) atau versi CUDA resmi.
 pillow>=9.0   # EXIF focal (estimate mode, DEC-016)
+fastapi==0.115.6
+uvicorn==0.34.0
+python-multipart==0.0.20
+httpx==0.28.1

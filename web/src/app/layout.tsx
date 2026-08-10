@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Tunas — Skrining Pertumbuhan Posyandu",
+  title: "Tunas | Pemantauan Pertumbuhan",
   description:
-    "Ukur tumbuhnya. Dahulukan yang perlu. PWA skrining stunting untuk kader dan petugas gizi.",
+    "Alur pemantauan pertumbuhan untuk keluarga, kader, dan ahli gizi.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -20,9 +20,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#39a26b",
+  themeColor: "#173f9f",
 };
 
 export default function RootLayout({
@@ -32,7 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id">
-      <body className="min-h-screen bg-soil-50 text-leaf-900 safe-top safe-bottom">
+      <body className="min-h-[100dvh] bg-[#f4f6fa] text-[#172033] safe-top safe-bottom">
         {children}
       </body>
     </html>

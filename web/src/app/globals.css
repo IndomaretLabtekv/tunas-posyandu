@@ -3,10 +3,9 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --foreground: #1a4431;
-  --background: #fbf7f4;
+  --font-sans: Aptos, "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --foreground: #172033;
+  --background: #f4f6fa;
 }
 
 @layer base {
@@ -17,6 +16,28 @@
     color: var(--foreground);
     background: var(--background);
     @apply antialiased;
+    overscroll-behavior-y: none;
+  }
+  * {
+    border-color: #dbe1ea;
+  }
+  ::selection {
+    background: #cbd9ff;
+    color: #172033;
+  }
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+  }
+  @media (max-width: 767px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
   }
 }
 
@@ -26,5 +47,8 @@
   }
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
+  }
+  .focus-ring {
+    @apply outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-blue-700;
   }
 }

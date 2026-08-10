@@ -21,4 +21,4 @@ results/*
 results/tabular/*
 !results/tabular/final/
 results/tabular/final/*
-!results/tabular/final/primary_model.joblib
+!results/tabular/final/primary_model.json

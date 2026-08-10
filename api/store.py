@@ -131,6 +131,23 @@ def list_visits(
     if child_id is not None:
         sql += " WHERE v.child_id = ?"
         params = (child_id,)
-    sql += " ORDER BY v.measured_at DESC"
+    sql += " ORDER BY v.measured_at ASC"
     rows = conn.execute(sql, params).fetchall()
     return [_row_to_dict(row) for row in rows]
+
+
+def get_child(conn: sqlite3.Connection, child_id: int) -> dict[str, Any] | None:
+    """Ambil data satu anak."""
+    row = conn.execute(
+        "SELECT id, name, sex, created_at FROM children WHERE id = ?",
+        (child_id,),
+    ).fetchone()
+    return dict(row) if row else None
+
+
+def list_children(conn: sqlite3.Connection) -> list[dict[str, Any]]:
+    """Daftar semua anak."""
+    rows = conn.execute(
+        "SELECT id, name, sex, created_at FROM children ORDER BY id"
+    ).fetchall()
+    return [dict(row) for row in rows]

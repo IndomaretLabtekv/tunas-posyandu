@@ -25,7 +25,7 @@ Tunas menggabungkan dua kanal menjadi satu daftar tindakan:
 | --- | --- |
 | **Visual** | Foto balita: dengan alas polos berukuran diketahui → pengukuran presisi + HAZ; TANPA alas → estimasi panjang (DEC-016, band ketidakpastian jujur) |
 | **Tabular** | Riwayat kunjungan Posyandu → fitur lintasan (growth velocity, tren Z-score, gagal tumbuh berulang) + faktor kontekstual → model risiko **prospektif** |
-| **Keluaran** | Dashboard petugas gizi: daftar balita terurut prioritas + atribusi SHAP per anak + fallback input manual |
+| **Keluaran** | Dashboard petugas gizi: daftar balita terurut prioritas + faktor penting global + fallback input manual |
 
 Yang membedakan Tunas dari aplikasi pencatatan Posyandu yang ada: sistem ini tidak berhenti di *mencatat*, melainkan **memperbaiki akurasi input** dan **mengurutkan tindak lanjut** ketika sumber daya lebih sedikit daripada kebutuhan.
 
@@ -132,7 +132,7 @@ Buka `http://localhost:3000`.
 Konfigurasi via environment variable:
 
 - `DATABASE_URL` — URL PostgreSQL (default `postgresql://tunas:tunas@localhost:5432/tunas`)
-- `MODEL_PATH` — lokasi artefak model tabular (default `results/tabular/final/primary_model.joblib`)
+- `MODEL_PATH` — lokasi artefak inferensi JSON (default `results/tabular/final/primary_model.json`)
 - `NEXT_PUBLIC_API_URL` — base URL backend untuk frontend (default `http://localhost:8000`)
 - `JWT_SECRET` - secret penandatangan token; wajib diganti di luar test
 - `JWT_ACCESS_MINUTES` - masa aktif token akses (default 60 menit)
@@ -197,7 +197,7 @@ python -m tabular.persist \
 
 1. Pilih mode **Kader** → ambil/unggah foto sampel dari `data/samples/` → lihat hasil QC + estimasi panjang badan + HAZ
 2. Uji **fallback manual**: unggah foto yang sengaja buram → sistem menolak → masukkan hasil ukur manual → skor risiko tetap dihasilkan
-3. Pilih mode **Petugas Gizi** → dashboard prioritas → klik satu anak → lihat penjelasan SHAP dan riwayat pertumbuhan
+3. Pilih mode **Petugas Gizi** → dashboard prioritas → klik satu anak → lihat faktor penting global dan riwayat pertumbuhan
 
 > Versi ini memakai **pemilih peran (role selector)** untuk keperluan demo, bukan autentikasi penuh. Autentikasi dan manajemen akun berada di Future Work.
 

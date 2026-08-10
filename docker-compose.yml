@@ -16,6 +16,7 @@ services:
       retries: 5
 
   backend:
+    image: tunas-api:local
     build:
       context: .
       dockerfile: api/Dockerfile
@@ -23,7 +24,7 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql://tunas:tunas@postgres:5432/tunas
-      MODEL_PATH: results/tabular/final/primary_model.joblib
+      MODEL_PATH: results/tabular/final/primary_model.json
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       JWT_ACCESS_MINUTES: ${JWT_ACCESS_MINUTES:-60}
       DEMO_SCOPE_KEY: ${DEMO_SCOPE_KEY:-posyandu-demo}

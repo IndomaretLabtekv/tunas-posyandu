@@ -94,7 +94,7 @@ def _priority_for_row(
 
 @router.get("/priority", response_model=PriorityResponse)
 async def get_priority() -> PriorityResponse:
-    """Daftar balita terurut risiko prospektif dengan faktor SHAP teratas."""
+    """Daftar balita terurut risiko prospektif dengan faktor global teratas."""
     conn = store.get_conn()
     try:
         store.init_db(conn)

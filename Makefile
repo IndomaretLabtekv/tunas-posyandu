@@ -11,7 +11,7 @@ build-web:
 	cd web && npm run build
 
 seed-demo:
-	docker compose run --rm backend python scripts/seed_demo_users.py
+	docker compose exec -T backend python -m scripts.seed_demo_users
 
 demo:
 	docker compose up --build

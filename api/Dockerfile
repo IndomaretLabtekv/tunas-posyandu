@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -6,12 +7,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends libgomp1 \
-    && rm -rf /var/lib/apt/lists/*
-
 COPY requirements-runtime.txt .
-RUN pip install --no-cache-dir -r requirements-runtime.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements-runtime.txt
 
 RUN groupadd --gid 10001 tunas \
     && useradd --uid 10001 --gid 10001 --no-create-home tunas
@@ -21,7 +19,7 @@ COPY --chown=10001:10001 cv ./cv
 COPY --chown=10001:10001 tabular ./tabular
 COPY --chown=10001:10001 scripts ./scripts
 COPY --chown=10001:10001 data/who/lhfa_lms.csv ./data/who/lhfa_lms.csv
-COPY --chown=10001:10001 results/tabular/final/primary_model.joblib ./results/tabular/final/primary_model.joblib
+COPY --chown=10001:10001 results/tabular/final/primary_model.json ./results/tabular/final/primary_model.json
 
 USER 10001:10001
 EXPOSE 8000

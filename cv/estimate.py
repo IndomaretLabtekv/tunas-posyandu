@@ -1,27 +1,29 @@
 """Estimasi panjang badan TANPA referensi skala (DEC-016) -- bukan pengukuran.
 
 Foto tanpa alas berukuran diketahui TIDAK dapat diukur secara absolut
-(scale ambiguity: S/d = s/f). Mode ini memberi PERKIRAAN kasar dengan
-dua prior, dipilih lewat gerbang fisiologis:
+(scale ambiguity: S/d = s/f). Mode ini -- ALUR UTAMA produk untuk foto
+langsung ("jepret") -- memberi PERKIRAAN dengan dua prior, dipilih lewat
+gerbang fisiologis:
 
 1. Prior kepala (top-down): skala = `NEWBORN_HEAD_CM / diameter_kepala_px`
    -- akurat bila kamera mendekati tegak lurus (kepala tampak bulat).
 2. Prior perspektif (oblique): skala = `camera_height_cm / focal_px`
-   -- model pinhole sederhana dengan asumsi tinggi kamera dan focal
-   panjang; focal diestimasi dari lebar citra (lensa HP ~0.72 x width).
+   -- model pinhole sederhana; focal panjang diambil dari EXIF foto HP
+   (bila ada, via `focal_px_from_exif`) atau heuristik 0.72 x lebar.
 
 Gerbang: rasio diameter-kepala/panjang-badan bayi fisiologis ~0.15-0.35.
 Bila rasio terukur di dalam rentang itu, kepala dipercaya (band +-15%);
 bila tidak (foto miring/samping), dipakai prior perspektif (band +-30%).
 
-Hasil SELALU diberi confidence rendah dan tidak pernah boleh disajikan
-sebagai pengukuran (RESPONSIBLE_AI.md, DEC-016). Ini fitur eksplorasi
-untuk demo, bukan klaim paper.
+Hasil SELALU diberi confidence rendah dan band ketidakpastian, dan tidak
+pernah boleh disajikan sebagai pengukuran (RESPONSIBLE_AI.md, DEC-016).
+Alas polos (mode akurat) tetap tersedia sebagai opsi.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -34,6 +36,29 @@ NEWBORN_HEAD_CM = 11.0
 DEFAULT_CAMERA_HEIGHT_CM = 60.0
 # Heuristik focal panjang HP: f_px ≈ 0.72 x lebar citra (FOV ~65-75 deg).
 DEFAULT_FOCAL_FRACTION = 0.72
+# Lebar sensor 35mm untuk konversi focal EXIF (FocalLengthIn35mmFilm).
+SENSOR_WIDTH_35MM = 36.0
+
+
+def focal_px_from_exif(path: str | Path, image_width_px: int) -> float | None:
+    """f_px dari EXIF foto HP: FocalLengthIn35mmFilm x lebar / 36 mm.
+
+    Foto asli dari HP kader memuat tag ini; foto stok/olahan tidak.
+    Mengembalikan None bila EXIF tidak ada/tidak terbaca (pemanggil
+    memakai heuristik).
+    """
+    try:
+        from PIL import Image, ExifTags
+        with Image.open(path) as im:
+            exif = im.getexif()
+        for tag, val in exif.items():
+            name = ExifTags.TAGS.get(tag, "")
+            if name == "FocalLengthIn35mmFilm" and isinstance(val, int) \
+                    and val > 0:
+                return val * image_width_px / SENSOR_WIDTH_35MM
+    except Exception:  # noqa: BLE001 -- EXIF opsional
+        return None
+    return None
 # Rentang fisiologis rasio diameter kepala : panjang badan.
 HEAD_RATIO_MIN, HEAD_RATIO_MAX = 0.15, 0.32
 # CATATAN: gate STRICT (<, bukan <=). Bila kepala lebih besar dari zona

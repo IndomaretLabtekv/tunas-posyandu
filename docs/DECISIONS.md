@@ -252,22 +252,41 @@ Keduanya tetap bukan pengganti validasi pada balita nyata. Jika `proxy_subjects_
 
 ---
 
-## DEC-016 — Mode ESTIMASI tanpa referensi skala (bukan pengukuran)
+## DEC-016 — Mode ESTIMASI tanpa referensi skala = ALUR UTAMA produk "jepret langsung"
 
-**Konteks.** Foto tanpa alas berukuran diketahui tidak dapat diukur secara absolut (scale ambiguity: `S/d = s/f`). Pengguna tetap ingin "memindai" foto bayi apa pun dan melihat perkiraan ukuran.
+**Konteks.** Visi produk dari awal: foto bayi apa pun langsung menghasilkan
+perkiraan ukuran, tanpa alas pengukuran dan tanpa penanda apa pun; akurasi
+nomor dua. Pengukuran absolut dari satu foto tanpa referensi mustahil
+secara matematis (scale ambiguity: `S/d = s/f`) -- yang bisa diberikan
+adalah PERKIRAAN dengan band ketidakpastian yang jujur.
 
 **Keputusan.**
-1. `cv/estimate.py` — mode estimasi dengan dua prior:
-   - **Prior kepala** (top-down): skala = `NEWBORN_HEAD_CM (11 cm) / diameter_kepala_px`; kepala diukur dari profil lebar KULIT di zona ujung siluet (scan dari ujung, berhenti pada konstriksi leher). Hanya dipakai bila rasio kepala:panjang masuk rentang fisiologis (0.15–0.32, gate STRICT — kepala non-fisiologis jenuh di ~0.32 dan selalu jatuh ke prior perspektif).
-   - **Prior perspektif** (oblique/samping): skala = `camera_height_cm (asumsi 60 cm) / focal_px (0.72 x lebar citra)`.
-2. Hasil SELALU `confidence 0.3`, band ±15% (head) / ±30% (perspektif), ditandai ESTIMASI di UI; **dilarang disajikan sebagai pengukuran** (RESPONSIBLE_AI.md).
-3. Demo & runner menampilkan estimasi hanya saat pengukuran mat ditolak karena "alas tidak terdeteksi".
+1. `cv/estimate.py` adalah **alur utama** produk untuk foto tanpa alas,
+   dengan dua prior:
+   - **Prior kepala** (top-down): skala = `NEWBORN_HEAD_CM (11 cm) /
+     diameter_kepala_px`; kepala diukur dari profil lebar KULIT di zona
+     ujung siluet (scan dari ujung, berhenti pada konstriksi leher).
+     Hanya dipakai bila rasio kepala:panjang masuk rentang fisiologis
+     (0.15-0.32, gate STRICT).
+   - **Prior perspektif** (oblique/samping): skala =
+     `camera_height_cm (asumsi 60 cm) / focal_px`. focal_px diambil dari
+     EXIF foto HP (`FocalLengthIn35mmFilm`, `focal_px_from_exif`) bila
+     ada; fallback heuristik 0.72 x lebar citra.
+2. Hasil SELALU `confidence 0.3`, band ±15% (head) / ±30% (perspektif),
+   ditandai "ESTIMASI" di UI; **dilarang disajikan sebagai pengukuran**
+   (RESPONSIBLE_AI.md).
+3. Alas polos berukuran diketahui tetap tersedia sebagai **opsi mode
+   akurat** (DEC-015); foto tanpa alas otomatis memakai estimasi.
 
-**Alasan.** Memenuhi kebutuhan eksplorasi "foto langsung ke-scan" tanpa mengorbankan integritas pengukuran: angka estimasi tidak pernah masuk klaim paper (tetap mat-based), dan label ketidakpastian selalu tampil.
+**Alasan.** Memenuhi kebutuhan "jepret langsung" secara jujur: angka
+estimasi tidak pernah diklaim sebagai ukuran presisi, band ketidakpastian
+selalu tampil, dan alur akurat tetap ada bila pengguna memakainya.
 
-**Konsekuensi.** Validasi dunia nyata (main-baby, newborn, tanpa alas): estimasi 52.8 cm ±30% vs panjang newborn nyata ~50 cm — dalam rentang. Foto oblique membuat prior kepala tidak valid (leher tak terpisah jelas) → jatuh ke perspektif. Paper tidak memakai mode ini sebagai hasil.
-
----
+**Konsekuensi.** Validasi dunia nyata: main-baby (newborn asli, oblique,
+tanpa alas) -> 52.8 cm ±30% vs panjang newborn nyata ~50 cm; baby-1
+(bayi di bantal, oblique) -> 51.5 cm ±15%. Foto stok tanpa EXIF memakai
+heuristik focal; foto HP asli memakai EXIF (lebih presisi). Paper tidak
+memakai mode ini sebagai hasil pengukuran.
 
 ## DEC-0xx — (template)
 

@@ -42,7 +42,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # repo root
 
 from cv.aruco import MatSpec, draw_overlay, rectify
-from cv.estimate import estimate_length_no_reference
+from cv.estimate import estimate_length_no_reference, focal_px_from_exif
 from cv.mat_corners import PRODUCT_MAT_COLOR, detect_mat_corners
 from cv.pipeline import measure_length
 from cv.quality import ImageQC
@@ -147,7 +147,8 @@ def main() -> None:
 
         estimate = None
         if not res.ok and "alas tidak terdeteksi" in "; ".join(res.qc_reasons):
-            estimate = estimate_length_no_reference(img)
+            estimate = estimate_length_no_reference(
+                img, focal_px=focal_px_from_exif(path, img.shape[1]))
 
         overlay = draw_overlay(img, det_prod if det_prod.ok else det_plain)
         if res.ok:

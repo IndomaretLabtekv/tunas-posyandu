@@ -1,60 +1,67 @@
 import Link from "next/link";
 
+const roles = [
+  {
+    name: "Ibu dan keluarga",
+    body: "Catat pemeriksaan bulanan, unggah foto, dan pantau tindak lanjut.",
+  },
+  {
+    name: "Kader Posyandu",
+    body: "Kelola antrean verifikasi, kunjungan rumah, dan pengukuran ulang.",
+  },
+  {
+    name: "Ahli gizi",
+    body: "Tinjau hasil terverifikasi, tentukan aksi, dan catat rujukan.",
+  },
+];
+
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-6 py-12">
-      <div className="w-full max-w-sm text-center">
-        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-leaf-500 shadow-lg">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            className="h-10 w-10 text-white"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M12 22v-9" />
-            <path d="M12 13a7 7 0 0 1 7-7h0a7 7 0 0 1-7 7Z" />
-            <path d="M12 13a7 7 0 0 0-7-7h0a7 7 0 0 0 7 7Z" />
-            <path d="M12 22a9 9 0 0 0 9-9h-2a7 7 0 0 1-7 7v2Z" />
-            <path d="M12 22a9 9 0 0 1-9-9h2a7 7 0 0 0 7 7v2Z" />
-          </svg>
-        </div>
-        <h1 className="mb-2 text-3xl font-bold tracking-tight text-leaf-900">
-          Tunas
-        </h1>
-        <p className="mb-10 text-leaf-700">
-          Ukur tumbuhnya. Dahulukan yang perlu.
-        </p>
-
-        <div className="grid gap-4">
-          <Link
-            href="/kader"
-            className="group rounded-2xl bg-leaf-500 px-6 py-5 text-left text-white shadow transition active:scale-[0.98]"
-          >
-            <span className="block text-sm font-medium opacity-90">Mode</span>
-            <span className="block text-xl font-semibold">Kader Posyandu</span>
-            <span className="mt-1 block text-sm opacity-90">
-              Ambil foto dan ukur pertumbuhan balita
+    <main className="min-h-[100dvh] bg-[#eef2f8] px-4 py-5 sm:px-6 sm:py-8">
+      <div className="mx-auto grid min-h-[calc(100dvh-4rem)] max-w-6xl overflow-hidden rounded-3xl border border-slate-200 bg-white lg:grid-cols-[1.05fr_0.95fr]">
+        <section className="flex flex-col justify-between bg-[#173f9f] p-7 text-white sm:p-10 lg:p-14">
+          <div className="flex items-center gap-3">
+            <span className="grid h-11 w-11 place-items-center rounded-xl bg-white text-lg font-black text-blue-900">
+              T
             </span>
-          </Link>
+            <span className="text-lg font-bold tracking-tight">Tunas</span>
+          </div>
+          <div className="py-16 lg:py-8">
+            <p className="mb-4 text-sm font-semibold text-blue-100">Pemantauan pertumbuhan 0-23 bulan</p>
+            <h1 className="max-w-xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
+              Satu alur dari rumah sampai Puskesmas.
+            </h1>
+            <p className="mt-5 max-w-lg text-base leading-7 text-blue-100">
+              Hasil foto adalah sinyal skrining. Setiap temuan berisiko tetap melalui verifikasi manusia.
+            </p>
+          </div>
+          <p className="text-xs leading-5 text-blue-200">
+            Bukan alat diagnosis. Keputusan klinis tetap berada pada tenaga kesehatan.
+          </p>
+        </section>
 
+        <section className="flex flex-col justify-center p-7 sm:p-10 lg:p-14">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight text-slate-950">Masuk sesuai peran</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Akun menentukan data dan tindakan yang dapat diakses.
+            </p>
+          </div>
+          <div className="mt-8 grid gap-3">
+            {roles.map((role) => (
+              <div key={role.name} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p className="font-bold text-slate-900">{role.name}</p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">{role.body}</p>
+              </div>
+            ))}
+          </div>
           <Link
-            href="/petugas"
-            className="group rounded-2xl bg-soil-500 px-6 py-5 text-left text-white shadow transition active:scale-[0.98]"
+            href="/login"
+            className="focus-ring mt-7 rounded-xl bg-blue-800 px-5 py-3 text-center font-bold text-white transition hover:bg-blue-900 active:translate-y-px"
           >
-            <span className="block text-sm font-medium opacity-90">Mode</span>
-            <span className="block text-xl font-semibold">Petugas Gizi</span>
-            <span className="mt-1 block text-sm opacity-90">
-              Lihat prioritas intervensi dan penjelasan
-            </span>
+            Masuk ke Tunas
           </Link>
-        </div>
-
-        <p className="mt-8 text-xs text-leaf-700/70">
-          Decision-support tool. Keputusan medis tetap di tangan tenaga kesehatan.
-        </p>
+        </section>
       </div>
     </main>
   );

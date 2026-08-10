@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { AppShell, InlineError, LoadingBlock, StatusBadge } from "@/components/AppShell";
 import { listKaderCases } from "@/lib/api";
 import type { CaseSummary } from "@/lib/types";
+import { joinLabels } from "@/lib/labels";
 import { useRoleSession } from "@/lib/useRoleSession";
 
 export default function KaderPage() {
@@ -30,7 +31,8 @@ export default function KaderPage() {
               <div>
                 <div className="flex flex-wrap items-center gap-2"><h2 className="text-lg font-bold text-slate-950">{item.child_name}</h2><StatusBadge value={item.status} />{item.overdue && <StatusBadge value="overdue" />}</div>
                 <p className="mt-2 text-sm text-slate-600">{item.age_days} hari / {item.weight_kg.toFixed(1)} kg / {item.length_cm ? `${item.length_cm.toFixed(1)} cm` : "panjang belum tersedia"}</p>
-                <p className="mt-2 text-xs text-slate-500">Alasan: {item.reason_codes.join(", ")} / dikirim {item.days_since_submission} hari lalu</p>
+                <p className="mt-2 text-sm font-semibold text-blue-800">Skor prioritas model {item.risk_score.toFixed(3)}</p>
+                <p className="mt-2 text-xs text-slate-500">Alasan: {joinLabels(item.reason_codes)} · dikirim {item.days_since_submission} hari lalu</p>
               </div>
               <span className="font-bold text-blue-800">Buka kasus</span>
             </Link>

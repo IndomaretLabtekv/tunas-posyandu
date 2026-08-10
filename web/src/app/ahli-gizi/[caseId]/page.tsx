@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { AppShell, InlineError, LoadingBlock, StatusBadge } from "@/components/AppShell";
 import { getNutritionistCase, recordDecision, referCase } from "@/lib/api";
 import type { CaseDetail } from "@/lib/types";
+import { joinLabels, labelForCode } from "@/lib/labels";
 import { useRoleSession } from "@/lib/useRoleSession";
 
 export default function NutritionistCasePage() {
@@ -48,7 +49,8 @@ export default function NutritionistCasePage() {
           <div className="grid gap-6">
             <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-sm font-semibold text-slate-500">Kasus #{detail.case.case_id}</p><h2 className="mt-1 text-xl font-bold text-slate-950">Ringkasan skrining</h2></div><StatusBadge value={detail.case.status} /></div>
-              <p className="mt-5 rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-900">Indikasi yang memicu review: {detail.case.reason_codes.join(", ")}.</p>
+              <p className="mt-5 rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-900">Alasan kasus perlu ditinjau: {joinLabels(detail.case.reason_codes).toLowerCase()}.</p>
+              <div className="mt-4 rounded-xl bg-blue-50 p-4 text-sm text-blue-950"><p className="font-bold">Skor prioritas model {detail.case.risk_score.toFixed(3)}</p><p className="mt-1 leading-6 text-blue-800">Faktor utama: {detail.case.risk_factors.map((factor) => factor.label).join(", ")}. Nilai ini membantu menentukan urutan tinjauan, bukan diagnosis.</p></div>
             </section>
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
@@ -58,7 +60,7 @@ export default function NutritionistCasePage() {
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
               <h2 className="text-lg font-bold text-slate-950">Catatan kasus</h2>
-              <div className="mt-5 grid gap-4">{detail.actions.map((item) => <div key={item.action_id} className="border-l-2 border-blue-300 pl-4"><div className="flex flex-wrap justify-between gap-2"><p className="font-bold text-slate-900">{item.action_type.replaceAll("_", " ")}</p><time className="text-xs text-slate-500">{new Date(item.created_at).toLocaleString("id-ID")}</time></div>{item.notes && <p className="mt-1 text-sm leading-6 text-slate-600">{item.notes}</p>}</div>)}</div>
+              <div className="mt-5 grid gap-4">{detail.actions.map((item) => <div key={item.action_id} className="border-l-2 border-blue-300 pl-4"><div className="flex flex-wrap justify-between gap-2"><p className="font-bold text-slate-900">{labelForCode(item.action_type)}</p><time className="text-xs text-slate-500">{new Date(item.created_at).toLocaleString("id-ID")}</time></div>{item.notes && <p className="mt-1 text-sm leading-6 text-slate-600">{item.notes}</p>}</div>)}</div>
             </section>
           </div>
 

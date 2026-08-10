@@ -69,6 +69,13 @@ export type CaseSummary = {
   next_due_at: string;
   days_since_submission: number;
   overdue: boolean;
+  risk_score: number;
+  risk_factors: Array<{
+    feature: string;
+    label: string;
+    value: number | null;
+    importance: number;
+  }>;
 };
 
 export type CaseAction = {

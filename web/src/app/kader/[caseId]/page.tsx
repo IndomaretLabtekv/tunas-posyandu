@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { AppShell, InlineError, LoadingBlock, StatusBadge } from "@/components/AppShell";
 import { assignCase, getKaderCase, recordHomeVisit, verifyCase } from "@/lib/api";
 import type { CaseDetail } from "@/lib/types";
+import { joinLabels, labelForCode } from "@/lib/labels";
 import { useRoleSession } from "@/lib/useRoleSession";
 
 export default function KaderCasePage() {
@@ -58,13 +59,14 @@ export default function KaderCasePage() {
                 <div><dt className="text-xs font-semibold text-slate-500">Kepercayaan</dt><dd className="mt-1 font-bold">{Math.round(detail.case.confidence * 100)}%</dd></div>
                 <div><dt className="text-xs font-semibold text-slate-500">Terlambat</dt><dd className="mt-1 font-bold">{detail.case.overdue ? "Ya" : "Tidak"}</dd></div>
               </dl>
-              <p className="mt-5 rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-900">Perlu verifikasi karena: {detail.case.reason_codes.join(", ")}.</p>
+              <p className="mt-5 rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-900">Perlu diverifikasi karena {joinLabels(detail.case.reason_codes).toLowerCase()}.</p>
+              <div className="mt-4 rounded-xl bg-blue-50 p-4 text-sm text-blue-950"><p className="font-bold">Skor prioritas model {detail.case.risk_score.toFixed(3)}</p><p className="mt-1 leading-6 text-blue-800">Faktor utama: {detail.case.risk_factors.map((factor) => factor.label).join(", ")}. Nilai yang lebih tinggi mendapat antrean lebih awal; ini bukan diagnosis.</p></div>
             </section>
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
               <h2 className="text-lg font-bold text-slate-950">Jejak tindakan</h2>
               {detail.actions.length === 0 ? <p className="mt-4 text-sm text-slate-600">Belum ada tindakan lapangan.</p> : (
-                <div className="mt-5 grid gap-4">{detail.actions.map((item) => <div key={item.action_id} className="border-l-2 border-blue-300 pl-4"><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-bold text-slate-900">{item.action_type.replaceAll("_", " ")}</p><time className="text-xs text-slate-500">{new Date(item.created_at).toLocaleString("id-ID")}</time></div>{item.notes && <p className="mt-1 text-sm leading-6 text-slate-600">{item.notes}</p>}</div>)}</div>
+                <div className="mt-5 grid gap-4">{detail.actions.map((item) => <div key={item.action_id} className="border-l-2 border-blue-300 pl-4"><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-bold text-slate-900">{labelForCode(item.action_type)}</p><time className="text-xs text-slate-500">{new Date(item.created_at).toLocaleString("id-ID")}</time></div>{item.notes && <p className="mt-1 text-sm leading-6 text-slate-600">{item.notes}</p>}</div>)}</div>
               )}
             </section>
           </div>
@@ -72,7 +74,7 @@ export default function KaderCasePage() {
           <section className="h-fit rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
             <h2 className="text-lg font-bold text-slate-950">Tindakan berikutnya</h2>
             {!["needs_review", "assigned", "home_visit"].includes(detail.case.status) ? (
-              <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">Tahap kader selesai. Kasus sekarang berstatus <strong>{detail.case.status.replaceAll("_", " ")}</strong>.</p>
+              <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">Tahap kader selesai. Kasus sekarang berstatus <strong>{labelForCode(detail.case.status)}</strong>.</p>
             ) : (
               <form onSubmit={action} className="mt-5 grid gap-4">
                 <p className="rounded-xl bg-blue-50 p-4 text-sm font-semibold leading-6 text-blue-900">{detail.case.status === "needs_review" ? "Ambil tanggung jawab kasus ini." : detail.case.status === "assigned" ? "Catat kunjungan rumah tanpa menimpa data awal." : "Masukkan hasil ukur ulang dan hasil verifikasi."}</p>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { clearSession, getSession } from "@/lib/api";
+import { labelForCode } from "@/lib/labels";
 
 type Props = {
   title: string;
@@ -101,7 +102,7 @@ export function StatusBadge({ value }: { value: string }) {
       : "border-slate-300 bg-slate-50 text-slate-700";
   return (
     <span className={`inline-flex rounded-lg border px-2 py-1 text-xs font-bold ${styles}`}>
-      {value.replaceAll("_", " ")}
+      {labelForCode(value)}
     </span>
   );
 }

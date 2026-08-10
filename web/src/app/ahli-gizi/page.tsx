@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { AppShell, InlineError, LoadingBlock, StatusBadge } from "@/components/AppShell";
 import { listNutritionistCases } from "@/lib/api";
 import type { CaseSummary } from "@/lib/types";
+import { joinLabels } from "@/lib/labels";
 import { useRoleSession } from "@/lib/useRoleSession";
 
 export default function NutritionistPage() {
@@ -33,7 +34,7 @@ export default function NutritionistPage() {
             <div className="grid gap-3">
               {cases.map((item) => (
                 <Link key={item.case_id} href={`/ahli-gizi/${item.case_id}`} className="focus-ring grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-blue-300 sm:grid-cols-[1fr_auto] sm:items-center">
-                  <div><div className="flex flex-wrap items-center gap-2"><h2 className="text-lg font-bold text-slate-950">{item.child_name}</h2><StatusBadge value={item.status} /></div><p className="mt-2 text-sm text-slate-600">HAZ {item.haz == null ? "belum tersedia" : item.haz.toFixed(2)} / panjang {item.length_cm == null ? "belum tersedia" : `${item.length_cm.toFixed(1)} cm`}</p><p className="mt-2 text-xs text-slate-500">{new Date(item.submitted_at).toLocaleDateString("id-ID")} / {item.reason_codes.join(", ")}</p></div>
+                  <div><div className="flex flex-wrap items-center gap-2"><h2 className="text-lg font-bold text-slate-950">{item.child_name}</h2><StatusBadge value={item.status} /></div><p className="mt-2 text-sm font-semibold text-blue-800">Skor prioritas model {item.risk_score.toFixed(3)}</p><p className="mt-2 text-sm text-slate-600">HAZ {item.haz == null ? "belum tersedia" : item.haz.toFixed(2)} · panjang {item.length_cm == null ? "belum tersedia" : `${item.length_cm.toFixed(1)} cm`}</p><p className="mt-2 text-xs text-slate-500">{new Date(item.submitted_at).toLocaleDateString("id-ID")} · {joinLabels(item.reason_codes)}</p></div>
                   <span className="font-bold text-blue-800">Tinjau</span>
                 </Link>
               ))}

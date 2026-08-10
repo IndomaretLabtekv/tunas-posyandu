@@ -1,9 +1,9 @@
-"""Muat artefak model prioritisasi secara malas."""
+"""Load and evaluate the dependency-light runtime tree artifact."""
 
 from __future__ import annotations
 
+import json
 import os
-import warnings
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -11,22 +11,31 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from tabular.explain import Explainer
-from tabular.persist import load_artifact, predict
+from tabular.explain import label_for
 
-# ponytail: SHAP memberi warning API change yang diketahui untuk LightGBM biner.
-warnings.filterwarnings("ignore", category=UserWarning, module="shap.explainers._tree")
-
-DEFAULT_MODEL_PATH = "results/tabular/final/primary_model.joblib"
+DEFAULT_MODEL_PATH = "results/tabular/final/primary_model.json"
+RUNTIME_ARTIFACT_VERSION = 2
 
 
 class ModelNotLoadedError(RuntimeError):
-    """Model belum tersedia atau gagal dimuat."""
+    """Raised when the runtime model is unavailable."""
+
+
+def load_runtime_artifact(path: Path) -> dict[str, Any]:
+    artifact = json.loads(path.read_text(encoding="utf-8"))
+    required = {"artifact_version", "objective", "feature_names", "tree_info", "feature_importance"}
+    if not isinstance(artifact, dict) or required - set(artifact):
+        raise ValueError(f"Artefak runtime tidak lengkap: {path}")
+    if artifact["artifact_version"] != RUNTIME_ARTIFACT_VERSION:
+        raise ValueError(f"Versi artefak runtime tidak didukung: {artifact['artifact_version']}")
+    if not str(artifact["objective"]).startswith("binary"):
+        raise ValueError("Hanya objective binary LightGBM yang didukung")
+    return artifact
 
 
 @lru_cache(maxsize=1)
 def _load_artifact_cached(path: str) -> dict[str, Any]:
-    return load_artifact(Path(path))
+    return load_runtime_artifact(Path(path))
 
 
 def get_model_path() -> str:
@@ -34,32 +43,69 @@ def get_model_path() -> str:
 
 
 def get_artifact() -> dict[str, Any] | None:
-    """Muat artefak model; kembalikan None bila file tidak ada."""
     path = get_model_path()
     if not Path(path).exists():
         return None
     return _load_artifact_cached(path)
 
 
+def _tree_value(tree: dict[str, Any], row: np.ndarray) -> float:
+    node = tree["tree_structure"]
+    while "leaf_value" not in node:
+        if node.get("decision_type") != "<=":
+            raise ValueError(f"Split LightGBM tidak didukung: {node.get('decision_type')}")
+        value = row[int(node["split_feature"])]
+        go_left = bool(node["default_left"]) if np.isnan(value) else value <= float(node["threshold"])
+        node = node["left_child"] if go_left else node["right_child"]
+    return float(node["leaf_value"])
+
+
+def predict_runtime(artifact: dict[str, Any], frame: pd.DataFrame) -> np.ndarray:
+    features = list(artifact["feature_names"])
+    missing = set(features) - set(frame.columns)
+    if missing:
+        raise ValueError(f"Kolom fitur inferensi hilang: {sorted(missing)}")
+
+    matrix = frame[features].to_numpy(dtype=float)
+    raw_scores = np.fromiter(
+        (sum(_tree_value(tree, row) for tree in artifact["tree_info"]) for row in matrix),
+        dtype=float,
+        count=len(matrix),
+    )
+    return 1.0 / (1.0 + np.exp(-np.clip(raw_scores, -709.0, 709.0)))
+
+
 def predict_scores(frame: pd.DataFrame) -> np.ndarray:
-    """Prediksi probabilitas risiko untuk setiap baris."""
-    art = get_artifact()
-    if art is None:
+    artifact = get_artifact()
+    if artifact is None:
         raise ModelNotLoadedError("model artifact tidak ditemukan")
-    return predict(art, frame)
+    return predict_runtime(artifact, frame)
 
 
 def explain_row(frame: pd.DataFrame, row_index, top_k: int = 5) -> list[dict[str, Any]]:
-    """SHAP attribution untuk satu baris."""
-    art = get_artifact()
-    if art is None:
+    artifact = get_artifact()
+    if artifact is None:
         raise ModelNotLoadedError("model artifact tidak ditemukan")
-    explainer = Explainer(art["model"], art["feature_names"])
-    return [a.as_dict() for a in explainer.explain_child(frame, row_index, top_k=top_k)]
+    if row_index not in frame.index:
+        raise KeyError(f"Baris {row_index!r} tidak ada")
+
+    row = frame.loc[row_index]
+    importance = sorted(
+        artifact["feature_importance"],
+        key=lambda item: (-float(item["importance"]), str(item["feature"])),
+    )[:top_k]
+    return [
+        {
+            "feature": item["feature"],
+            "label": label_for(item["feature"]),
+            "value": None if pd.isna(row[item["feature"]]) else round(float(row[item["feature"]]), 3),
+            "importance": round(float(item["importance"]), 6),
+        }
+        for item in importance
+    ]
 
 
 def rank_scores(scores: np.ndarray, tie_break: list[str]) -> np.ndarray:
-    """Peringkat 1..N deterministik: skor tinggi dulu, tie-break lexicographic."""
     order = np.lexsort((np.asarray(tie_break).astype(str), -np.asarray(scores, dtype=float)))
     ranks = np.empty(len(scores), dtype=int)
     ranks[order] = np.arange(1, len(scores) + 1)

@@ -9,7 +9,7 @@ from typing import Annotated, Any
 
 import cv2
 import numpy as np
-from fastapi import APIRouter, File, Form, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from api import store
 from api.schemas import MeasurementResponse
@@ -21,6 +21,37 @@ from cv.segment import ColorSegmenter
 from tabular.who_lms import haz
 
 router = APIRouter()
+
+# Batas ukuran unggahan (bytes). Diubah menjadi test yang dapat diimpor.
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+# Rentang usia MVP: protokol recumbent 0-23 bulan penuh.
+MIN_AGE_DAYS = 0
+MAX_AGE_DAYS = 730
+
+
+def _validate_demographics(sex: str, age_days: int) -> None:
+    if sex.upper() not in {"M", "F"}:
+        raise HTTPException(status_code=422, detail="sex harus M atau F")
+    if not (MIN_AGE_DAYS <= age_days <= MAX_AGE_DAYS):
+        raise HTTPException(
+            status_code=422,
+            detail=f"age_days harus antara {MIN_AGE_DAYS} dan {MAX_AGE_DAYS}",
+        )
+
+
+def _read_upload_limited(image: UploadFile, max_bytes: int) -> bytes:
+    """Read upload in chunks; reject early if it exceeds max_bytes."""
+    chunks: list[bytes] = []
+    total = 0
+    while chunk := image.file.read(8192):
+        total += len(chunk)
+        if total > max_bytes:
+            raise HTTPException(
+                status_code=413,
+                detail=f"upload melebihi batas {max_bytes} bytes",
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
 
 
 def _decode_bgr(contents: bytes) -> np.ndarray | None:
@@ -112,24 +143,31 @@ async def create_measurement(
     age_days: Annotated[int, Form()],
     name: Annotated[str, Form()] = "",
 ) -> MeasurementResponse:
-    """Terima foto balita, jalankan pipeline CV, simpan, dan kembalikan hasil."""
-    contents = await image.read()
+    """Terima foto balita, jalankan pipeline CV, simpan, dan kembalikan hasil.
+
+    Batas ukuran unggahan: MAX_UPLOAD_BYTES bytes (default 10 MiB).
+    """
+    _validate_demographics(sex, age_days)
+    contents = _read_upload_limited(image, MAX_UPLOAD_BYTES)
     cv_result = _process_image(contents, sex, age_days)
 
     conn = store.get_conn()
-    store.init_db(conn)
-    child_id = store.create_child(conn, name=name, sex=sex)
-    visit_id = store.record_visit(
-        conn,
-        child_id=child_id,
-        age_days=age_days,
-        mode=cv_result["mode"],
-        length_cm=cv_result["length_cm"],
-        confidence=cv_result["confidence"],
-        haz=cv_result.get("haz"),
-        qc_reasons=cv_result["qc_reasons"],
-        low_confidence=cv_result["confidence"] < LOW_CONFIDENCE,
-    )
+    try:
+        store.init_db(conn)
+        child_id = store.create_child(conn, name=name, sex=sex)
+        visit_id = store.record_visit(
+            conn,
+            child_id=child_id,
+            age_days=age_days,
+            mode=cv_result["mode"],
+            length_cm=cv_result["length_cm"],
+            confidence=cv_result["confidence"],
+            haz=cv_result.get("haz"),
+            qc_reasons=cv_result["qc_reasons"],
+            low_confidence=cv_result["confidence"] < LOW_CONFIDENCE,
+        )
+    finally:
+        conn.close()
 
     return MeasurementResponse(
         mode=cv_result["mode"],

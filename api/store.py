@@ -8,12 +8,16 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
-DB_PATH = os.getenv("DB_PATH", "./data/tunas.db")
+DEFAULT_DB_PATH = "./data/tunas.db"
+
+
+def _db_path() -> str:
+    return os.getenv("DB_PATH", DEFAULT_DB_PATH)
 
 
 def get_conn(path: str | os.PathLike[str] | None = None) -> sqlite3.Connection:
     """Buka koneksi SQLite, buat direktori induk bila perlu."""
-    path = Path(path) if path is not None else Path(DB_PATH)
+    path = Path(path) if path is not None else Path(_db_path())
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row

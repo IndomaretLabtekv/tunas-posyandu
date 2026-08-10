@@ -1,18 +1,14 @@
 """Test FastAPI /measurements endpoint with real CV processing."""
 
 import io
-from pathlib import Path
 
 import cv2
 import numpy as np
 import pytest
+from _cv_synth import synth_plain_mat_with_body
 from fastapi.testclient import TestClient
 
-import sys
-
-# Ensure tests/ helpers are importable.
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _cv_synth import STANDARD_MAT_COLOR, synth_plain_mat_with_body  # noqa: E402
+from api.routes import MAX_UPLOAD_BYTES
 
 
 @pytest.fixture
@@ -20,7 +16,6 @@ def client(tmp_path, monkeypatch):
     """Build a TestClient with a temporary database."""
     db_path = tmp_path / "api_test.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
-    # DB_PATH is read at import time in api.main, so import here after env is set.
     from api.main import app
     return TestClient(app)
 
@@ -109,3 +104,62 @@ def test_response_includes_mode_confidence_qc_and_low_confidence(client):
     assert "confidence" in payload
     assert "qc_reasons" in payload
     assert "low_confidence" in payload
+
+
+def test_invalid_sex_returns_422_before_cv(client):
+    img, _, _, _ = synth_plain_mat_with_body()
+    response = client.post(
+        "/measurements",
+        data={"name": "Budi", "sex": "X", "age_days": "180"},
+        files={"image": ("body.jpg", io.BytesIO(_encode_jpeg(img)), "image/jpeg")},
+    )
+    assert response.status_code == 422
+
+
+def test_out_of_range_age_returns_422_before_cv(client):
+    img, _, _, _ = synth_plain_mat_with_body()
+    response = client.post(
+        "/measurements",
+        data={"name": "Budi", "sex": "M", "age_days": "731"},
+        files={"image": ("body.jpg", io.BytesIO(_encode_jpeg(img)), "image/jpeg")},
+    )
+    assert response.status_code == 422
+
+
+def test_oversized_upload_returns_413(client):
+    huge = b"\x00" * (MAX_UPLOAD_BYTES + 1)
+    response = client.post(
+        "/measurements",
+        data={"name": "Budi", "sex": "M", "age_days": "180"},
+        files={"image": ("body.jpg", io.BytesIO(huge), "image/jpeg")},
+    )
+    assert response.status_code == 413
+
+
+def test_per_test_database_isolation(client, tmp_path, monkeypatch):
+    img, _, _, _ = synth_plain_mat_with_body()
+    assert client.post(
+        "/measurements",
+        data={"name": "Budi", "sex": "M", "age_days": "180"},
+        files={"image": ("body.jpg", io.BytesIO(_encode_jpeg(img)), "image/jpeg")},
+    ).status_code == 200
+
+    other_db = tmp_path / "other.db"
+    monkeypatch.setenv("DB_PATH", str(other_db))
+    from api.main import app
+    other_client = TestClient(app)
+    other_client.post(
+        "/measurements",
+        data={"name": "Ani", "sex": "F", "age_days": "240"},
+        files={"image": ("body.jpg", io.BytesIO(_encode_jpeg(img)), "image/jpeg")},
+    )
+
+    from api import store
+    conn1 = store.get_conn(str(tmp_path / "api_test.db"))
+    conn2 = store.get_conn(str(other_db))
+    try:
+        assert len(store.list_visits(conn1)) == 1
+        assert len(store.list_visits(conn2)) == 1
+    finally:
+        conn1.close()
+        conn2.close()

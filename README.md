@@ -22,7 +22,7 @@ Dua hambatan nyata di garda terdepan pemantauan gizi balita Indonesia:
 Tunas menggabungkan dua kanal menjadi satu daftar tindakan:
 
 | Kanal | Fungsi |
-|---|---|
+| --- | --- |
 | **Visual** | Foto balita: dengan alas polos berukuran diketahui → pengukuran presisi + HAZ; TANPA alas → estimasi panjang (DEC-016, band ketidakpastian jujur) |
 | **Tabular** | Riwayat kunjungan Posyandu → fitur lintasan (growth velocity, tren Z-score, gagal tumbuh berulang) + faktor kontekstual → model risiko **prospektif** |
 | **Keluaran** | Dashboard petugas gizi: daftar balita terurut prioritas + atribusi SHAP per anak + fallback input manual |
@@ -80,9 +80,28 @@ Pastikan Docker dan Docker Compose sudah terpasang, lalu:
 ```bash
 cp .env.example .env
 make demo
+make seed-demo
 ```
 
 Buka `http://localhost:3000`. Backend tersedia di `http://localhost:8000/docs`.
+
+### Alur demo tiga peran
+
+`make seed-demo` membuat satu akun ibu, kader, dan ahli gizi pada scope yang sama,
+serta satu profil anak berusia 180 hari. Kredensial dibaca dari `DEMO_PASSWORD`
+dan dicetak oleh seed command, bukan ditanam sebagai secret produksi.
+
+Pada layar desktop, halaman login menyediakan tombol **Ibu Demo**, **Kader Demo**,
+dan **Ahli Gizi Demo** untuk langsung masuk tanpa mengetik kredensial. Shortcut ini
+hanya aktif ketika `ENABLE_DEMO_LOGIN=true`; password tetap berada di backend dan
+tidak dikirim ke bundle web. Di layar mobile, gunakan form login biasa.
+
+1. Masuk sebagai **Ibu Demo**, kirim pemeriksaan bulanan dengan foto dan berat badan.
+2. Masuk sebagai **Kader Demo**, ambil kasus, catat kunjungan rumah, lalu simpan pengukuran verifikasi.
+3. Masuk sebagai **Ahli Gizi Demo**, tinjau sumber data, catat intervensi atau rujukan, lalu selesaikan kasus.
+4. Masuk kembali sebagai ibu untuk melihat status dan pengukuran terverifikasi pada timeline.
+
+Hasil CV adalah sinyal skrining. UI tidak menyatakannya sebagai diagnosis terkonfirmasi.
 
 ### Menjalankan secara lokal (untuk pengembangan cepat)
 
@@ -99,6 +118,13 @@ make run-api
 # 3. Frontend (terminal terpisah)
 cd web && npm install && cd ..
 make run-web
+
+> **Catatan bun:** `bun install` dengan bun 1.3.14 (stable/canary) bisa gagal dengan
+> `error: Fail extracting tarball for "next"` — ini regression di streaming
+> extractor bun untuk paket >2 MB (lihat oven-sh/bun#34821, #34861).
+> Workaround: jalankan dengan env var
+> `BUN_INSTALL_STREAMING_MIN_SIZE=100000000 bun install`
+> (memaksa extractor buffered). Ikuti `bun upgrade` bila versi fix sudah rilis.
 ```
 
 Buka `http://localhost:3000`.
@@ -108,6 +134,11 @@ Konfigurasi via environment variable:
 - `DATABASE_URL` — URL PostgreSQL (default `postgresql://tunas:tunas@localhost:5432/tunas`)
 - `MODEL_PATH` — lokasi artefak model tabular (default `results/tabular/final/primary_model.joblib`)
 - `NEXT_PUBLIC_API_URL` — base URL backend untuk frontend (default `http://localhost:8000`)
+- `JWT_SECRET` - secret penandatangan token; wajib diganti di luar test
+- `JWT_ACCESS_MINUTES` - masa aktif token akses (default 60 menit)
+- `DEMO_SCOPE_KEY` - scope bersama untuk akun demo
+- `DEMO_PASSWORD` - password lokal untuk akun demo; jangan dipakai di produksi
+- `ENABLE_DEMO_LOGIN` - aktifkan endpoint dan shortcut login lokal tiga peran
 
 ### Perintah Makefile
 
@@ -116,6 +147,7 @@ make test        # jalankan seluruh test suite (menggunakan SQLite sementara)
 make run-api     # jalankan backend uvicorn
 make run-web     # jalankan frontend Next.js dev
 make build-web   # build frontend untuk production
+make seed-demo   # buat akun dan data awal untuk alur demo tiga peran
 make demo        # jalankan seluruh stack dengan Docker Compose
 make down        # hentikan stack Docker Compose
 ```
@@ -172,7 +204,7 @@ python -m tabular.persist \
 ## 7. Tim
 
 | Nama | Peran |
-|---|---|
+| --- | --- |
 | Riantama Putra | — |
 | Athilla Zaidan Zidna Fann | — |
 | Nicholas Wise Saragih Sumbayak | — |

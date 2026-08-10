@@ -16,3 +16,6 @@ experiments/src/babies/
 experiments/results/overlay/babies/
 tests/image-test/
 results/cv/demo_overlay.png
+.superpowers/
+graphify-out/
+web/bun.lock

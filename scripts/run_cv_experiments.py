@@ -44,7 +44,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # repo root
 from cv.aruco import MatSpec, draw_overlay, rectify
 from cv.estimate import measure_or_estimate
 from cv.mat_corners import PRODUCT_MAT_COLOR, detect_mat_corners
-from cv.pipeline import measure_length
 from cv.quality import ImageQC
 from cv.segment import ColorSegmenter
 

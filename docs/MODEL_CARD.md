@@ -46,7 +46,7 @@ Angka MAE tidak pernah dilaporkan sendirian: sistem menerapkan *selective predic
 ### Failure mode yang diketahui
 | Failure | Penyebab | Penanganan sistem |
 |---|---|---|
-| Sudut alas tidak terdeteksi | Pencahayaan buruk, alas kusut/terlipat, warna lantai mirip alas | Citra ditolak, kader diminta ulang |
+| Sudut alas tidak terdeteksi | Pencahayaan buruk, alas kusut/terlipat, warna lantai mirip alas | Pengukuran ditolak; mode ESTIMASI (DEC-016) memberi perkiraan kasar + band; kader dapat mengukur manual |
 | Kamera terlalu miring | Pengambilan tergesa | Geometry QC menolak; UI memberi panduan |
 | Galat sisa akibat offset bidang tubuh | Tubuh tidak tepat pada bidang alas | Tidak dikoreksi penuh; dibatasi lewat protokol jarak & sudut; galat sisa dilaporkan |
 | Subjek tidak lurus / tungkai tertekuk | Balita bergerak | QC siluet (kelengkungan sumbu, deviasi) menandai; pose QC menambah sinyal bila lolos CV-06; skor kepercayaan turun |

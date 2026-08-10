@@ -44,7 +44,7 @@ pwdlib[argon2]==0.2.1
 - Modify: `api/Dockerfile`
 
 - [ ] Replace the Dockerfile with one `python:3.12-slim` stage that sets `PYTHONDONTWRITEBYTECODE=1`, `PYTHONUNBUFFERED=1`, and `PORT=8000`.
-- [ ] Install `requirements-runtime.txt` without an apt layer or pip cache.
+- [ ] Install only `libgomp1` from apt for the LightGBM wheel, then install `requirements-runtime.txt` without a pip cache.
 - [ ] Create UID/GID 10001, copy `api`, `cv`, `tabular`, `scripts`, `data/who/lhfa_lms.csv`, and `results/tabular/final/primary_model.joblib` with that ownership, then switch to the non-root user.
 - [ ] Add `EXPOSE 8000`, a Python-standard-library health check for `http://127.0.0.1:${PORT}/openapi.json`, and this command:
 
@@ -56,6 +56,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PORT=8000
 
 WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY requirements-runtime.txt .
 RUN pip install --no-cache-dir -r requirements-runtime.txt

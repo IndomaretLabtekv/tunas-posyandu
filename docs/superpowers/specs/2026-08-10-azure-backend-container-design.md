@@ -6,7 +6,7 @@ Make the existing FastAPI backend container small, production-safe, and compatib
 
 ## Minimal Design
 
-Use one `python:3.12-slim` stage. Remove `apt-get`, `gcc`, and `libpq-dev` because runtime uses binary wheels. Install a dedicated `requirements-runtime.txt` containing only packages required by current API, CV, model loading, and explanation routes. Use headless OpenCV to avoid GUI libraries.
+Use one `python:3.12-slim` stage. Remove `gcc` and `libpq-dev`; retain only the small `libgomp1` runtime required by the LightGBM wheel. Install a dedicated `requirements-runtime.txt` containing only packages required by current API, CV, model loading, and explanation routes. Use headless OpenCV to avoid GUI libraries.
 
 Copy only runtime source, the WHO table, the model artifact, and the demo seed module. Run Uvicorn as a non-root user on `${PORT:-8000}` with one worker by default. Add a Docker-native health check against FastAPI's existing OpenAPI endpoint, avoiding new application code solely for the platform.
 

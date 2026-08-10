@@ -23,7 +23,7 @@ Tunas menggabungkan dua kanal menjadi satu daftar tindakan:
 
 | Kanal | Fungsi |
 |---|---|
-| **Visual** | Foto balita: dengan alas polos berukuran diketahui → pengukuran presisi + HAZ; TANPA alas → estimasi panjang (DEC-016, band ketidakpastian jujur) |
+| **Visual** | Foto balita di atas alas ber-marker ArUco → quality control → rektifikasi perspektif → estimasi panjang badan → konversi ke HAZ (standar WHO) |
 | **Tabular** | Riwayat kunjungan Posyandu → fitur lintasan (growth velocity, tren Z-score, gagal tumbuh berulang) + faktor kontekstual → model risiko **prospektif** |
 | **Keluaran** | Dashboard petugas gizi: daftar balita terurut prioritas + atribusi SHAP per anak + fallback input manual |
 
@@ -55,7 +55,7 @@ tunas-posyandu/
 │   ├── PAPER_OUTLINE.md   # kerangka paper ↔ rubrik
 │   ├── VIDEO_SCRIPT.md    # skrip video demo 3–5 menit
 │   └── PLAN.md            # timeline & pembagian kerja
-├── cv/                    # deteksi alas (markerless), QC, segmentasi, geometri
+├── cv/                    # ArUco, quality control, segmentasi, geometri
 ├── tabular/               # feature engineering, WHO LMS, model risiko, SHAP
 ├── api/                   # FastAPI backend
 ├── web/                   # frontend responsif (mode kader & petugas gizi)
@@ -122,30 +122,14 @@ Dataset sintetis dan trained weights di-host di Hugging Face (link disubmit terp
 python scripts/download_artifacts.py   # unduh dari Hugging Face ke ./artifacts
 ```
 
-Tabel LMS length-for-age resmi WHO untuk usia 0–730 hari sudah tersedia di
-`data/who/lhfa_lms.csv`. Sumber, checksum, transformasi, dan tabel pembanding
-independen dicatat di `data/who/provenance.json`.
-
 ### Reproduksi hasil paper
 
 ```bash
 python -m cv.evaluate   --config configs/exp_cv_00.yaml    # CV-00 plane-offset stress test
-python -m tabular.final_experiment --config configs/exp_tabular_final.json
+python -m tabular.train --config configs/exp_tab_04.yaml   # → hasil Tabel 2 paper
 ```
 
-Perintah tabular membangkitkan lima kohort sintetis, menjalankan B0/B1/B2/M1/M2/M3
-pada grouped dan temporal holdout, lalu menulis seluruh bukti ke
-`results/tabular/final/`. Ringkasan terukur ada di
-[`docs/FINAL_TABULAR_RESULTS.md`](docs/FINAL_TABULAR_RESULTS.md).
-
-Verifikasi model tersimpan pada fixture tetap, di proses baru:
-
-```bash
-python -m tabular.persist \
-  --model results/tabular/final/primary_model.joblib \
-  --input results/tabular/final/persistence_fixture.csv \
-  --output /tmp/tunas_predictions.csv
-```
+> Setiap perintah di atas tersedia setelah eksperimen terkait dijalankan dan config-nya di-commit. Status tiap eksperimen ada di [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md); config yang belum ada berarti eksperimennya belum berjalan. Seluruh eksperimen memakai seed tetap dan split yang disimpan.
 
 ## 6. Alur demo (untuk penguji)
 

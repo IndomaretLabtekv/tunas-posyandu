@@ -12,10 +12,6 @@ Konsekuensi desain yang mengikuti dari posisi ini:
 
 - Setiap estimasi visual menampilkan nilai ukur dan tingkat kepercayaannya, sehingga dapat diperiksa dan dikoreksi kader.
 - Kader selalu dapat menimpa hasil estimasi dengan hasil ukur manual.
-- Mode ESTIMASI tanpa referensi (DEC-016) memberi angka KASAR ber-band
-  ketidakpastian untuk foto tanpa alas; tidak ada gerbang semantik subjek
-  (foreground non-manusia besar pun dapat menghasilkan estimasi) -- angka
-  ini tidak pernah diklaim sebagai pengukuran.
 - Dashboard menyajikan **urutan prioritas**, bukan instruksi tindakan.
 - Anak berskor rendah tetap tampil dalam daftar pemantauan; sistem tidak pernah menyembunyikan anak.
 

@@ -7,15 +7,14 @@ Dua komponen model dalam Tunas didokumentasikan terpisah karena sifat, evaluasi,
 ## Bagian 1 — Pipeline estimasi antropometri (kanal visual)
 
 ### Ringkasan
-Pipeline geometri, bukan model tunggal: deteksi 4 sudut alas polos berukuran diketahui (tanpa marker, DEC-015) → rektifikasi bidang alas → quality control → segmentasi subjek → ekstraksi endpoint sepanjang sumbu tubuh → konversi ke sentimeter → konversi ke HAZ (LMS WHO). QC postur berbasis geometri siluet merupakan jalur utama; model pose pretrained bersifat **auxiliary dan bersyarat** — hanya masuk produk bila lolos CV-06 (DEC-006). Pose tidak pernah menjadi sumber angka ukur.
+Pipeline geometri, bukan model tunggal: deteksi marker ArUco → rektifikasi bidang alas → quality control → segmentasi subjek → ekstraksi endpoint sepanjang sumbu tubuh → konversi ke sentimeter → konversi ke HAZ (LMS WHO). QC postur berbasis geometri siluet merupakan jalur utama; model pose pretrained bersifat **auxiliary dan bersyarat** — hanya masuk produk bila lolos CV-06 (DEC-006). Pose tidak pernah menjadi sumber angka ukur.
 
 ### Penggunaan yang dimaksudkan
 Membantu kader Posyandu memperoleh estimasi panjang badan telentang pada kondisi tangkap yang terkendali, sebagai pendamping (bukan pengganti) pengukuran manual.
 
 ### Penggunaan di luar cakupan
 - Pengukuran tinggi badan berdiri
-- Pengukuran tanpa alas polos berukuran diketahui (mode ESTIMASI DEC-016
-  memberi perkiraan kasar ber-band, bukan pengukuran)
+- Pengukuran tanpa alas ber-marker
 - Pengukuran dari citra yang gagal quality control
 - Diagnosis status gizi tanpa penilaian tenaga kesehatan
 
@@ -35,7 +34,7 @@ Membantu kader Posyandu memperoleh estimasi panjang badan telentang pada kondisi
 | MAPE (%) | — | — |
 | Galat endpoint kepala (cm) | — | — |
 | Galat endpoint kaki (cm) | — | — |
-| Detection rate sudut alas (%) | — | — |
+| Detection rate marker (%) | — | — |
 | Reject rate QC (%) | — | — |
 | Latency (ms, CPU) | — | — |
 | **Coverage** (% citra yang diterima QC) | — | — |
@@ -46,11 +45,11 @@ Angka MAE tidak pernah dilaporkan sendirian: sistem menerapkan *selective predic
 ### Failure mode yang diketahui
 | Failure | Penyebab | Penanganan sistem |
 |---|---|---|
-| Sudut alas tidak terdeteksi | Pencahayaan buruk, alas kusut/terlipat, warna lantai mirip alas | Citra ditolak, kader diminta ulang |
+| Marker tidak terbaca | Pencahayaan buruk, marker terlipat/kotor, marker terpotong | Citra ditolak, kader diminta ulang |
 | Kamera terlalu miring | Pengambilan tergesa | Geometry QC menolak; UI memberi panduan |
-| Galat sisa akibat offset bidang tubuh | Tubuh tidak tepat pada bidang alas | Tidak dikoreksi penuh; dibatasi lewat protokol jarak & sudut; galat sisa dilaporkan |
+| Galat sisa akibat offset bidang tubuh | Tubuh tidak tepat pada bidang marker | Tidak dikoreksi penuh; dibatasi lewat protokol jarak & sudut; galat sisa dilaporkan |
 | Subjek tidak lurus / tungkai tertekuk | Balita bergerak | QC siluet (kelengkungan sumbu, deviasi) menandai; pose QC menambah sinyal bila lolos CV-06; skor kepercayaan turun |
-| Titik ukur berada di atas bidang alas | Geometri (parallax) | Tidak dikoreksi penuh; dibatasi lewat protokol tinggi kamera & posisi bingkai hasil CV-00 (DEC-011) |
+| Titik ukur berada di atas bidang marker | Geometri (parallax) | Tidak dikoreksi penuh; dibatasi lewat protokol tinggi kamera & posisi bingkai hasil CV-00 (DEC-011) |
 | Oklusi (selimut, pakaian tebal, tangan pengasuh) | Kondisi lapangan | Segmentasi tidak stabil → estimasi ditandai berkepercayaan rendah |
 | Alas berwarna tidak seragam | Alas tidak standar | Segmentasi memburuk; QC menolak |
 
@@ -87,21 +86,16 @@ Seluruhnya pada target dan split identik, dan seluruhnya menghasilkan **skor kon
 Aturan biner `HAZ_t < −2` tetap dilaporkan sebagai pembanding pada metrik klasifikasi, tetapi tidak dipakai sebagai baseline ranking.
 
 ### Metrik
-
-Grouped child holdout, mean ± sample SD atas lima seed. Hasil temporal dan
-angka mentah per seed ada di [`FINAL_TABULAR_RESULTS.md`](FINAL_TABULAR_RESULTS.md)
-dan `results/tabular/final/`.
-
 | Metrik | B0 | B1 | B2 | M1 | M2 | M3 |
 |---|---|---|---|---|---|---|
-| AUPRC | .1626±.0464 | .1797±.0436 | .1622±.0403 | .2291±.0546 | **.2735±.0947** | .2268±.0556 |
-| Recall (Top-20%) | .2096±.1002 | .2989±.0967 | .2741±.0364 | .4124±.0655 | **.4821±.0994** | .4590±.0820 |
-| Precision (Top-20%) | .1042±.0466 | .1500±.0401 | .1417±.0309 | .2125±.0475 | **.2500±.0691** | .2375±.0600 |
-| F1 (Top-20%) | .1384±.0625 | .1986±.0545 | .1859±.0339 | .2790±.0530 | **.3277±.0818** | .3115±.0694 |
-| Recall@10% | .1143±.0496 | .1363±.0391 | .1623±.0335 | .2392±.0728 | .2587±.1034 | **.2667±.0223** |
-| Precision@10% | .1167±.0543 | .1417±.0475 | .1667±.0417 | .2417±.0618 | **.2750±.1337** | **.2750±.0475** |
-| Recall@20% | .2096±.1002 | .2989±.0967 | .2741±.0364 | .4124±.0655 | **.4821±.0994** | .4590±.0820 |
-| Raw Brier | — | — | .2041±.0127 | .0948±.0109 | .0942±.0099 | **.0939±.0107** |
+| AUPRC | | | | | | |
+| Recall (kelas risiko) | | | | | | |
+| Precision | | | | | | |
+| F1 | | | | | | |
+| Recall@10% | | | | | | |
+| Precision@10% | | | | | | |
+| Recall@20% | | | | | | |
+| Brier score | | | | | | |
 | Latency (ms) | | | | | | |
 
 Metrik @K adalah yang paling dekat dengan kondisi nyata: kapasitas tindak lanjut petugas terbatas, sehingga yang penting adalah berapa kasus tertangkap dalam K prioritas teratas.

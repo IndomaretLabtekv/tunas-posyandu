@@ -43,5 +43,6 @@ Commons); jangan commit, jangan pakai di paper/video.
   berguna sebagai ground truth aspek rasio). Beberapa foto bukan kondisi
   protokol (mat tekstur/miring/terpotong) — kegagalan deteksi di situ adalah
   perilaku yang benar (fail-closed).
-- `babies/` — Wikimedia Commons: foto bayi telentang tanpa alas ukur — wajib
-  ditolak oleh pipeline (false positive rate = 0).
+- `babies/` — Wikimedia Commons: foto bayi telentang tanpa alas ukur —
+  pengukuran wajib ditolak (false positive = 0); mode ESTIMASI (DEC-016)
+  memberi perkiraan kasar + band ketidakpastian.

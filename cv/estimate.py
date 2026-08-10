@@ -29,6 +29,7 @@ import cv2
 import numpy as np
 
 from cv.segment import ColorSegmenter, endpoints_from_mask
+from cv.pipeline import MeasurementResult, measure_length
 
 # Prior medis: diameter kepala bayi baru lahir (OCF ~34-36 cm / pi).
 NEWBORN_HEAD_CM = 11.0
@@ -77,6 +78,61 @@ class EstimateResult:
     reasons: list = field(default_factory=list)
     head_diameter_px: float | None = None
     span_px: float | None = None
+
+
+@dataclass
+class ProductResult:
+    """Hasil alur produk: pengukuran presisi ATAU estimasi (DEC-016).
+
+    - mode "measurement": alas terdeteksi, angka presisi (ok).
+    - mode "estimate": pengukuran gagal (alas tidak ada / QC), estimasi
+      kasar diberikan dengan band ketidakpastian.
+    - mode "rejected": keduanya gagal.
+    """
+
+    mode: str
+    measurement: MeasurementResult | None = None
+    estimate: EstimateResult | None = None
+
+    @property
+    def length_cm(self):
+        if self.measurement is not None and self.measurement.ok:
+            return self.measurement.length_cm
+        return self.estimate.length_cm if self.estimate is not None else None
+
+    @property
+    def is_estimate(self) -> bool:
+        return self.mode == "estimate"
+
+
+def measure_or_estimate(
+        image: np.ndarray,
+        mat_spec=None,
+        image_path: str | Path | None = None,
+        **measure_kwargs) -> ProductResult:
+    """ENTRYPOINT alur produk: coba pengukuran presisi, gagal -> estimasi.
+
+    Alur utama (DEC-016): foto apa pun menghasilkan angka. Bila alas
+    berukuran diketahui terdeteksi -> pengukuran presisi; bila tidak
+    (alas tidak ada, QC menolak, dst.) -> estimasi kasar dengan band
+    ketidakpastian, alasan kegagalan pengukuran ikut dicatat. Bila
+    estimasi pun gagal -> rejected.
+    """
+    if mat_spec is None:
+        from cv.mat_corners import PRODUCT_MAT_SPEC
+        mat_spec = PRODUCT_MAT_SPEC
+    m = measure_length(image, mat_spec, **measure_kwargs)
+    if m.ok:
+        return ProductResult(mode="measurement", measurement=m)
+
+    focal = None
+    if image_path is not None:
+        focal = focal_px_from_exif(image_path, image.shape[1])
+    e = estimate_length_no_reference(image, focal_px=focal)
+    if e.ok:
+        e.reasons = [f"pengukuran gagal: {'; '.join(m.qc_reasons)}"] + e.reasons
+        return ProductResult(mode="estimate", measurement=m, estimate=e)
+    return ProductResult(mode="rejected", measurement=m, estimate=e)
 
 
 def estimate_length_no_reference(

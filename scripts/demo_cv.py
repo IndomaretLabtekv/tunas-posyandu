@@ -22,9 +22,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # repo root
 sys.path.insert(0, "tests")  # helper citra sintetis
 
 from cv.aruco import draw_overlay, rectify
-from cv.estimate import estimate_length_no_reference
+from cv.estimate import measure_or_estimate
 from cv.mat_corners import detect_mat_corners
-from cv.pipeline import measure_length
 from cv.quality import ImageQC
 from cv.segment import ColorSegmenter
 from _cv_synth import SPEC, STANDARD_MAT_COLOR, synth_plain_mat_with_body
@@ -71,21 +70,17 @@ def main() -> None:
     img_path = sys.argv[1] if len(sys.argv) > 1 else None
     img, source, ground_truth, seg, qc = _load_input(img_path)
 
-    r = measure_length(img, SPEC, segmenter=seg, image_qc=qc)
-    estimate = None
-    if not r.ok and "alas tidak terdeteksi" in "; ".join(r.qc_reasons):
-        # Mode ESTIMASI (DEC-016): tanpa referensi skala, bukan pengukuran.
-        estimate = estimate_length_no_reference(img)
-        if estimate.ok:
-            band = round(estimate.length_cm * estimate.uncertainty_rel, 1)
-            print(f"[{source}] ESTIMASI ~{estimate.length_cm} cm "
-                  f"(tanpa alas, +-{band} cm, {estimate.method})")
-        else:
-            print(f"[{source}] DITOLAK: {r.qc_reasons}")
-    elif r.ok:
+    pr = measure_or_estimate(img, mat_spec=SPEC, image_path=img_path,
+                             segmenter=seg, image_qc=qc)
+    r, estimate = pr.measurement, pr.estimate
+    if pr.mode == "measurement":
         gt = f" (asli={ground_truth} cm)" if ground_truth is not None else ""
-        print(f"[{source}] terukur={r.length_cm} cm{gt} | model={r.model} "
+        print(f"[{source}] terukur={pr.length_cm} cm{gt} | model={r.model} "
               f"| confidence={r.confidence} | lat={r.latency_s}s")
+    elif pr.mode == "estimate":
+        band = round(estimate.length_cm * estimate.uncertainty_rel, 1)
+        print(f"[{source}] ESTIMASI ~{estimate.length_cm} cm "
+              f"(tanpa alas, +-{band} cm, {estimate.method})")
     else:
         print(f"[{source}] DITOLAK: {r.qc_reasons}")
 

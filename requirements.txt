@@ -15,3 +15,4 @@ huggingface_hub>=0.24
 kornia>=0.7   # dipakai kode remote BiRefNet_dynamic (HF)
 # torch>=2.0 wajib untuk BiRefNet_dynamic & ViTPose (jalur model);
 # instal sesuai platform: pip install torch (CPU) atau versi CUDA resmi.
+pillow>=9.0   # EXIF focal (estimate mode, DEC-016)

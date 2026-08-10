@@ -163,7 +163,7 @@ Aturan kasus tepi — wajib diikuti seragam:
 | Lebih dari satu kunjungan dalam jendela | Pakai yang terdekat ke titik 3 bulan |
 | Hanya ada kunjungan di luar jendela | Dibuang; jangan ekstrapolasi |
 | Anak melewati batas usia MVP di dalam jendela | Baris dibuang |
-| Anak sudah severely stunted (HAZ < −3) pada `t` | Tetap disertakan; kriteria penurunan ≥ 0,5 SD tetap berlaku, dan kasus ini dilaporkan terpisah di error analysis |
+| Anak sudah berada di bawah HAZ −3 pada `t` | Tetap disertakan; kriteria penurunan ≥ 0,5 SD tetap berlaku, dan kasus ini dilaporkan terpisah di error analysis |
 | Follow-up ada tapi kolom panjang badan kosong | Dibuang |
 
 Penamaan di paper: **operational deterioration threshold** untuk prototipe, bukan ambang klinis. Kalibrasi bersama ahli gizi masuk Future Work.
@@ -294,3 +294,49 @@ memakai mode ini sebagai hasil pengukuran.
 **Keputusan.**
 **Alasan.**
 **Konsekuensi.**
+
+---
+
+## DEC-017 — Kontrak workflow skrining pertumbuhan 0–23 bulan
+
+**Konteks.** Workflow backend baru membutuhkan batas usia, status pengukuran,
+peran, dan status kasus yang sama di seluruh API dan antarmuka.
+
+**Keputusan.** Implementasi ini hanya menerima usia inklusif
+`0 <= age_days <= 730` dan memakai panjang badan telentang (*recumbent
+length*). Protokol tinggi berdiri tidak diimplementasikan. Hasil CV adalah
+**indikasi gangguan pertumbuhan — perlu verifikasi**, bukan diagnosis atau
+konfirmasi status klinis. Pengukuran dari pengiriman ibu berstatus `unverified`;
+setelah dikonfirmasi oleh kader atau tenaga kesehatan, statusnya menjadi
+`verified`, dengan sumber verifikasi tetap dicatat.
+
+Peran kanonik:
+
+| Role | Tanggung jawab |
+|---|---|
+| `mother` | Mengirim data pemeriksaan pertumbuhan anak. |
+| `kader` | Menangani tindak lanjut operasional, kunjungan rumah, pengukuran ulang, dan catatan lapangan. |
+| `nutritionist` | Ahli gizi/Puskesmas yang meninjau kasus terverifikasi dan memutuskan intervensi atau rujukan. |
+
+Status kasus dan transisi yang diizinkan:
+
+```text
+submitted → normal
+submitted → needs_review → assigned → home_visit → verified_risk
+verified_risk → referred → resolved
+needs_review → resolved
+```
+
+`needs_review` berarti hasil memerlukan verifikasi manusia dan tidak boleh
+ditampilkan sebagai `stunting` atau diagnosis. `resolved` adalah status
+terminal untuk kasus tersebut; transisi lain di luar daftar ini ditolak.
+
+**Alasan.** Batas usia dan metode ukur menjaga interpretasi WHO tetap konsisten,
+sedangkan pemisahan `unverified`/`verified` mencegah hasil CV diperlakukan
+sebagai fakta klinis. State machine eksplisit membuat tanggung jawab operasional
+dan keputusan kesehatan dapat diaudit.
+
+**Konsekuensi.** Demo pertama menggunakan jalur CV server-side Python/OpenCV
+yang sudah ada. Citra unggahan hanya diproses sementara dan catatan yang
+disimpan berupa hasil terstruktur, provenance, status, tindakan, dan rujukan.
+Porting CV ke perangkat adalah pekerjaan terpisah dan bukan bagian kontrak ini.

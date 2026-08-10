@@ -19,6 +19,37 @@ Konsekuensi desain yang mengikuti dari posisi ini:
 - Dashboard menyajikan **urutan prioritas**, bukan instruksi tindakan.
 - Anak berskor rendah tetap tampil dalam daftar pemantauan; sistem tidak pernah menyembunyikan anak.
 
+### Kontrak skrining 0–23 bulan
+
+Workflow ini mendukung `0 <= age_days <= 730`, menggunakan panjang badan
+telentang (*recumbent length*), dan tidak mengimplementasikan tinggi berdiri.
+Hasil screening selalu diberi label **indikasi gangguan pertumbuhan — perlu
+verifikasi**. Label ini bukan diagnosis dan bukan konfirmasi stunting.
+
+Tanggung jawab peran dikunci sebagai berikut:
+
+- `mother` mengirim data pemeriksaan pertumbuhan anak;
+- `kader` menangani kontak, kunjungan rumah, pengukuran ulang, dan catatan
+  tindak lanjut;
+- `nutritionist` (ahli gizi/Puskesmas) meninjau hasil terverifikasi dan
+  memutuskan intervensi atau rujukan.
+
+Pengukuran yang dikirim ibu berstatus `unverified`. Pengukuran menjadi
+`verified` hanya setelah dikonfirmasi kader atau tenaga kesehatan, dan sumber
+konfirmasi harus terlihat pada riwayat kasus.
+
+Status kasus mengikuti transisi tertutup berikut:
+
+```text
+submitted → normal
+submitted → needs_review → assigned → home_visit → verified_risk
+verified_risk → referred → resolved
+needs_review → resolved
+```
+
+Tidak ada transisi lain yang diizinkan; `resolved` bersifat terminal. Status
+`needs_review` tidak boleh dirender sebagai `stunting` atau diagnosis.
+
 ## 2. Privasi & data pribadi
 
 ### Dalam versi semifinal
@@ -65,7 +96,8 @@ Dua analisis berikut wajib ada karena tanpa keduanya angka performa mudah menyes
 ## 5. Batas klaim (mengikat untuk paper dan video)
 
 Yang **tidak boleh** dinyatakan:
-- Bahwa sistem mendeteksi atau mendiagnosis stunting
+- Bahwa sistem mendiagnosis atau mengonfirmasi stunting; sistem hanya memberi
+  **indikasi gangguan pertumbuhan — perlu verifikasi**
 - Bahwa akurasi klinis telah terbukti
 - Bahwa MAE pada balita nyata telah diukur
 - Bahwa ambang risiko telah tervalidasi secara klinis

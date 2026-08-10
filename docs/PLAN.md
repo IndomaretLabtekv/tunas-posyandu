@@ -6,6 +6,35 @@
 
 ---
 
+## Technical Architecture & Implementation Plan
+
+> Sumber kebenaran arsitektur MVP teknis: `docs/superpowers/plans/2026-08-10-pwa-mvp-implementation.md`.
+> Implementasi menyimpang dari rencana di beberapa titik (SQLite alih-alih PostgreSQL, tidak ada Docker Compose, dll.). Rencana ini menangkap pemulihan arsitektur dan sisa pekerjaan penyelarasan.
+
+### Phase 1 — Restore defined architecture (COMPLETE)
+
+- [x] Dependencies: `sqlalchemy==2.0.51` + `psycopg2-binary==2.9.10`
+- [x] Rewrite `api/store.py` to SQLAlchemy Core — PostgreSQL default (`DATABASE_URL`), SQLite fallback for tests
+- [x] Migrate tests from `DB_PATH` to `DATABASE_URL=sqlite+pysqlite:///...`
+- [x] Add Docker Compose stack: `postgres`, `backend`, `frontend`
+- [x] Add `api/Dockerfile`, `web/Dockerfile`, `web/.dockerignore`, root `.dockerignore`
+- [x] Update `Makefile` and `README.md` §5 — Docker Compose as primary path
+- [x] Verification: pytest **322 passed, 2 skipped**; frontend build OK; Postgres wiring OK
+
+### Phase 2 — Align implementation with the original MVP plan (PENDING)
+
+- [ ] Add `POST /manual-entry` endpoint and real manual-entry form in Kader page
+- [ ] Add `GET /children` list endpoint
+- [ ] Move child detail page from `/petugas/[id]` to `/anak/[id]`
+- [ ] Create `web/src/lib/types.ts` and `web/src/lib/api.ts` typed API client
+- [ ] Extract reusable components: `CaptureButton`, `ManualEntryForm`, `MeasurementResult`, `PriorityCard`, `GrowthChart`, `ShapBars`
+- [ ] Add `web/src/app/offline/page.tsx`
+- [ ] Replace empty `tests/test_smoke.py` with Docker Compose smoke test
+
+> **Catatan scope:** Phase 1 sengaja mempertahankan pipeline CV nyata dan model M2 lintasan pertumbuhan yang sudah berjalan, alih-alih menggantinya dengan stub/cv_stub.py dan tabular_predict.py dari rencana asli. Phase 2 hanya menyelaraskan rute, komponen, dan UX tanpa mengganti lapisan CV/model.
+
+---
+
 ## 0. Item yang menunggu panitia
 
 Jangan diasumsikan sudah terjawab. Tanyakan malam ini di grup:

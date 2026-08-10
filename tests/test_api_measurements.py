@@ -15,7 +15,7 @@ from api.routes import MAX_UPLOAD_BYTES
 def client(tmp_path, monkeypatch):
     """Build a TestClient with a temporary database."""
     db_path = tmp_path / "api_test.db"
-    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setenv("DATABASE_URL", f"sqlite+pysqlite:///{db_path}")
     from api.main import app
     return TestClient(app)
 
@@ -145,7 +145,7 @@ def test_per_test_database_isolation(client, tmp_path, monkeypatch):
     ).status_code == 200
 
     other_db = tmp_path / "other.db"
-    monkeypatch.setenv("DB_PATH", str(other_db))
+    monkeypatch.setenv("DATABASE_URL", f"sqlite+pysqlite:///{other_db}")
     from api.main import app
     other_client = TestClient(app)
     other_client.post(

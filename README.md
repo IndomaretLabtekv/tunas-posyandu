@@ -73,51 +73,51 @@ tunas-posyandu/
 
 ## 5. Setup
 
-### Prasyarat
+### Menjalankan dengan Docker Compose (cara termudah)
 
-- Python 3.11+
-- Node.js 20+ (frontend)
-- (opsional) GPU — tidak wajib, pipeline berjalan di CPU
-
-### Instalasi
+Pastikan Docker dan Docker Compose sudah terpasang, lalu:
 
 ```bash
-git clone <REPO_URL>
-cd tunas-posyandu
-
-# Backend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-
-# Frontend
-cd web && npm install && cd ..
+cp .env.example .env
+make demo
 ```
 
-### Menjalankan lokal
+Buka `http://localhost:3000`. Backend tersedia di `http://localhost:8000/docs`.
+
+### Menjalankan secara lokal (untuk pengembangan cepat)
 
 ```bash
-# Terminal 1 — backend
+# 1. PostgreSQL (bisa via Docker)
+docker run -d --name tunas-postgres -e POSTGRES_USER=tunas -e POSTGRES_PASSWORD=tunas -e POSTGRES_DB=tunas -p 5432:5432 postgres:16-alpine
+
+# 2. Backend
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
 make run-api
 
-# Terminal 2 — frontend
+# 3. Frontend (terminal terpisah)
+cd web && npm install && cd ..
 make run-web
 ```
 
 Buka `http://localhost:3000`.
 
-Konfigurasi opsional via environment variable:
+Konfigurasi via environment variable:
 
-- `DB_PATH` — lokasi SQLite (default `./data/tunas.db`)
+- `DATABASE_URL` — URL PostgreSQL (default `postgresql://tunas:tunas@localhost:5432/tunas`)
 - `MODEL_PATH` — lokasi artefak model tabular (default `results/tabular/final/primary_model.joblib`)
 - `NEXT_PUBLIC_API_URL` — base URL backend untuk frontend (default `http://localhost:8000`)
 
 ### Perintah Makefile
 
 ```bash
-make test        # jalankan seluruh test suite
+make test        # jalankan seluruh test suite (menggunakan SQLite sementara)
 make run-api     # jalankan backend uvicorn
 make run-web     # jalankan frontend Next.js dev
 make build-web   # build frontend untuk production
+make demo        # jalankan seluruh stack dengan Docker Compose
+make down        # hentikan stack Docker Compose
 ```
 
 Versi seluruh dependency di-pin pada `requirements.txt` dan `package-lock.json`.

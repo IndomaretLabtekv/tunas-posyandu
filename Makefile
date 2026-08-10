@@ -10,5 +10,8 @@ run-web:
 build-web:
 	cd web && npm run build
 
-# Target `demo` ditambahkan HANYA setelah docker-compose.yml ada dan diuji.
-# Jangan mencantumkan perintah yang diketahui gagal.
+demo:
+	docker compose up --build
+
+down:
+	docker compose down

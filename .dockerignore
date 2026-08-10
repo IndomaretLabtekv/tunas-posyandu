@@ -1,0 +1,10 @@
+.venv
+web/node_modules
+.git
+.github
+.omo
+docs
+__pycache__
+*.pyc
+.pytest_cache
+.mypy_cache

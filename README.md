@@ -105,7 +105,7 @@ uvicorn api.main:app --reload --port 8000
 cd web && npm run dev
 ```
 
-Buka `http://localhost:5173`. Salin `.env.example` menjadi `.env` bila perlu mengubah konfigurasi.
+Buka `http://localhost:3000`. Salin `.env.example` menjadi `.env` bila perlu mengubah konfigurasi.
 
 > Target sebelum submission: menyediakan satu perintah `make demo` yang menjalankan seluruh stack. Perintah itu **belum tersedia** dan tidak dicantumkan sampai benar-benar diuji.
 

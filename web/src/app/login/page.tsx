@@ -130,13 +130,13 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <div className="mt-7 hidden border-t border-slate-200 pt-6 lg:block">
+            <div className="mt-7 border-t border-slate-200 pt-6">
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-bold text-slate-950">Quick login demo</p>
                   <p className="mt-1 text-xs text-slate-500">Pilih role untuk langsung masuk.</p>
                 </div>
-                <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-blue-700">Desktop</span>
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-blue-700">Demo</span>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-3">
                 {demoAccounts.map((account) => (
